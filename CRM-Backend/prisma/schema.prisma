@@ -1,0 +1,1098 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+
+  id         String   @id @default(uuid())
+  employeeId String?  @unique
+  name       String
+  username   String?  @unique
+  email    String?
+  mobile   String?
+  password String
+
+  role     UserRole @default(SALES_REP)
+
+  avatar   String?
+  isActive Boolean  @default(true)
+  maxDiscount Float @default(0) // New field for user-wise discount limit
+
+  // Email Provider
+  emailProvider EmailProvider?
+
+  // OAuth (Gmail)
+  emailAccessToken  String?
+  emailRefreshToken String?
+  emailTokenExpiry  DateTime?
+
+  // SMTP providers
+  smtpHost     String?
+  smtpPort     Int?
+  smtpUser     String?
+  smtpPassword String?
+
+  
+  // RELATIONS
+
+  ownedAccounts Account[]
+
+  ownedContacts    Contact[] @relation("ContactOwner")
+  createdContacts  Contact[] @relation("ContactCreatedBy")
+  modifiedContacts Contact[] @relation("ContactModifiedBy")
+  accountKAMs      Account[] @relation("AccountKAM")
+
+  ownedDeals       Deal[]    @relation("DealOwner")
+  createdDeals     Deal[]    @relation("DealCreatedBy")
+  modifiedDeals    Deal[]    @relation("DealModifiedBy")
+
+  tasks           Task[]
+  createdTasks    Task[] @relation("TaskCreatedBy")
+  modifiedTasks   Task[] @relation("TaskModifiedBy")
+
+  reminders       Reminder[]
+  notifications   Notification[]
+
+  // Calendar
+calendarIntegration CalendarIntegration[]
+organizedMeetings   Meeting[]
+
+  dealStageHistories DealStageHistory[] @relation("StageChangedBy")
+
+  sentEmails            EmailLog[]
+  whatsAppMessages      WhatsAppMessage[]
+  createdEmailTemplates EmailTemplate[]
+
+  // NEW
+createdEmailCampaigns EmailCampaign[]
+
+// 🔥 NEW: ASSIGNMENTS
+dealAssignments    DealAssignment[]
+contactAssignments ContactAssignment[]
+accountAssignments AccountAssignment[]
+quotationApprovals QuotationApproval[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+ADMIN
+MANAGER
+SALES_REP
+}
+
+model Account {
+  id             String @id @default(uuid())
+  accountName    String
+  accountOwnerId String
+  keyAccountManagerId String?
+  keyAccountManager   User?   @relation("AccountKAM", fields: [keyAccountManagerId], references: [id])
+
+  // NEW: Account Image
+  image String? @db.Text
+
+  parentAccountId String?
+  parentAccount   Account?  @relation("ParentAccount", fields: [parentAccountId], references: [id])
+  childAccounts   Account[] @relation("ParentAccount")
+
+  accountType   AccountType?
+  industry      String?
+  annualRevenue Float?
+  employees     Int?
+  
+
+  // 🔥 NEW: Lifecycle (MAIN FIELD YOU NEED)
+lifecycle AccountLifecycle @default(ACTIVE)
+
+// 🔥 NEW: Track lifecycle changes
+lifecycleUpdatedAt DateTime @default(now())
+
+// 🔥 NEW: Critical for analytics
+lastActivityAt DateTime?
+
+  phone         String?
+  website       String?
+  ownership     String?
+  accountNumber String? @unique
+
+  billingStreet  String?
+  billingCity    String?
+  billingState   String?
+  billingPincode String?
+  billingCountry String?
+
+
+
+  owner    User       @relation(fields: [accountOwnerId], references: [id])
+  contacts Contact[]
+  deals    Deal[]
+  quotations Quotation[]
+  tasks    Task[]
+  emails   EmailLog[]
+  whatsAppMessages WhatsAppMessage[]
+  meetings Meeting[]
+  assignments AccountAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+  @@index([accountOwnerId])
+  @@index([accountName])
+  // 🔥 NEW INDEXES (for analytics performance)
+@@index([lifecycle])
+@@index([lastActivityAt])
+}
+
+enum AccountType {
+  PROSPECT
+  CUSTOMER_DIRECT
+  CUSTOMER_CHANNEL
+  CHANNEL_PARTNER
+  INSTALLATION_PARTNER
+  TECHNOLOGY_PARTNER
+  OTHER
+}
+
+enum AccountLifecycle {
+  PROSPECT
+  ACTIVE
+  INACTIVE
+  DEACTIVATED
+}
+
+
+
+model Contact {
+  id         String  @id @default(uuid())
+  salutation String?
+  firstName  String
+  lastName   String?
+  email      String  @unique
+  phone      String?
+  mobile     String?
+  title      String?
+  department String?
+
+  // Contact Image
+  image String? @db.Text
+
+  // NEW: Lead Source for Contact
+  leadSource LeadSource?
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  contactOwnerId String
+  owner          User   @relation("ContactOwner", fields: [contactOwnerId], references: [id])
+
+  mailingCountry String?
+  mailingFlat    String?
+  mailingStreet  String?
+  mailingCity    String?
+  mailingState   String?
+  mailingZip     String?
+
+  description String?
+
+  createdById String
+  createdBy   User   @relation("ContactCreatedBy", fields: [createdById], references: [id])
+
+  modifiedById String
+  modifiedBy   User   @relation("ContactModifiedBy", fields: [modifiedById], references: [id])
+
+  deals  Deal[]
+  tasks  Task[]
+  emails EmailLog[]
+  whatsAppMessages WhatsAppMessage[]
+  meetings Meeting[]
+  meetingAttendees MeetingAttendee[]
+
+  assignments ContactAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([contactOwnerId])
+}
+
+model Deal {
+  id String @id @default(uuid())
+
+  dealName String
+
+  // ⭐ AUTO GENERATED
+  dealLogId String @unique
+
+  amount          Float?
+  expectedRevenue Float?
+  closingDate     DateTime
+  probability     Int?
+  status DealStatus @default(IN_PROGRESS)
+
+  stage DealStage
+
+  stageUpdatedAt DateTime @default(now())
+
+  rfqAlertSentAt DateTime? 
+
+  // ⭐ NEW FIELDS
+  personInCharge String?
+
+  productGroup ProductGroup?
+  weightage    Weightage?
+
+  type DealType?
+
+  nextStep       String?
+  leadSource     LeadSource?
+  campaignSource String?
+  description    String?
+  stageHistory   DealStageHistory[]
+  dealOwnerId    String
+  owner          User               @relation("DealOwner", fields: [dealOwnerId], references: [id])
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("DealCreatedBy", fields: [createdById], references: [id])
+
+  modifiedById String
+  modifiedBy   User   @relation("DealModifiedBy", fields: [modifiedById], references: [id])
+
+  tasks       Task[]
+  quotations Quotation[]
+  emails      EmailLog[]
+  whatsAppMessages WhatsAppMessage[]
+  meetings Meeting[]
+  assignments DealAssignment[]
+  // 🔐 Deal Risk Analytics (NEW)
+  risk        DealRisk?
+  riskHistory DealRiskHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([dealOwnerId])
+  @@index([stage])
+}
+
+enum ProductGroup {
+  MTS_PRO
+  MTS_STANDARD
+  FACTEYES
+  MTS_ASSEMBLY
+}
+
+enum DealStage {
+  RFQ
+  VISIT_MEETING
+  PREVIEW
+  REGRETTED
+  TECHNICAL_PROPOSAL
+  COMMERCIAL_PROPOSAL
+  REVIEW_FEEDBACK
+  MOVED_TO_PURCHASE
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+  CLOSED_LOST_TO_COMPETITION
+}
+enum DealStatus {
+  IN_PROGRESS
+  PENDING_AT_CUSTOMER
+  REGRETTED
+  CLOSED
+}
+enum Weightage {
+  PROBABILITY
+  BALLPARK_OFFER
+  BUDGETARY_OFFER
+  DETAIL_L1
+  DETAIL_L2
+  FIRM_AFTER_PRICE_FINALIZATION
+  TECHNICAL_ONLY
+}
+
+enum DealType {
+  EXISTING_BUSINESS
+  NEW_BUSINESS
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum EmailStatus {
+  DRAFT
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum EmailProvider {
+GOOGLE
+MICROSOFT
+SMTP
+}
+
+enum EmailDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum WhatsAppDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum WhatsAppStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum EmailFolder {
+  INBOX
+  SENT
+  DRAFT
+  ARCHIVED
+}
+
+enum LeadSource {
+  WEB
+  PHONE_INQUIRY
+  PARTNER_REFERRAL
+  EMPLOYEE_REFERRAL
+  COLD_CALL
+  TRADE_SHOW
+  ADVERTISEMENT
+  SOCIAL_MEDIA
+  EMAIL_CAMPAIGN
+  PURCHASED_LIST
+  OTHER
+}
+
+enum TemplateCategory {
+  PROPOSAL
+  FOLLOW_UP
+  QUOTATION
+  MEETING
+  NEGOTIATION
+  CLOSING
+  OTHER
+}
+
+enum CalendarProvider {
+  GOOGLE
+  MICROSOFT
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  MISSED
+}
+
+enum AttendeeStatus {
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+  NEEDS_ACTION
+}
+
+enum ReminderType {
+  EMAIL
+  BROWSER
+  BOTH
+}
+
+model DealStageHistory {
+  id String @id @default(uuid())
+
+  dealId String
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+stage           DealStage
+status          DealStatus?
+amount          Float?
+probability     Int?
+expectedRevenue Float?
+closingDate     DateTime?
+
+// ✅ NEW FIELD
+description String? @db.Text
+
+  changedById String
+  changedBy   User   @relation("StageChangedBy", fields: [changedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+}
+
+model Task {
+  id      String    @id @default(uuid())
+  subject String
+  dueDate DateTime?
+
+  status   TaskStatus   @default(NOT_STARTED)
+  priority TaskPriority @default(NORMAL)
+
+  reminder    Boolean @default(false)
+  repeat      Boolean @default(false)
+  description String?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id])
+
+  dealId    String?
+  deal      Deal?      @relation(fields: [dealId], references: [id])
+  reminders Reminder[]
+
+  createdById String
+  createdBy   User   @relation("TaskCreatedBy", fields: [createdById], references: [id])
+
+  modifiedById String
+  modifiedBy   User   @relation("TaskModifiedBy", fields: [modifiedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([priority])
+  @@index([contactId])
+  @@index([accountId])
+  @@index([dealId])
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  DEFERRED
+  WAITING
+}
+
+enum TaskPriority {
+  HIGH
+  HIGHEST
+  NORMAL
+  LOW
+  LOWEST
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  COMPLETED
+  FAILED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SUBMITTED   // 🔥 NEW (sales → admin)
+  APPROVED
+  REJECTED
+}
+
+enum QuotationType {
+  BUDGETARY
+  QUOTATION
+  FIRM
+}
+
+model Reminder {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  remindAt    DateTime
+  emailBefore Int?
+  popupBefore Int?
+
+  isEmailSent Boolean @default(false)
+  isPopupSent Boolean @default(false)
+
+  priority String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  contactId String?
+  accountId String?
+  dealId    String?
+
+  // ✅ ADD THIS
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id       String  @id @default(uuid())
+  title    String
+  message  String
+  type     String
+  recordId String? // ⭐ ADD THIS
+
+  isRead Boolean @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([recordId])
+}
+
+model DealRisk {
+  id String @id @default(uuid())
+
+  dealId String @unique
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  score     Int // 0–100 risk score
+  riskLevel RiskLevel
+
+  // Explainability layer
+  factors Json // { daysInStage: 12, lastActivityDays: 5, probability: 40 }
+
+  // Playbook actions
+  playbook Json // ["Call decision maker", "Send revised quote"]
+
+  lastCalculatedAt DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([riskLevel])
+}
+
+model DealRiskHistory {
+  id String @id @default(uuid())
+
+  dealId String
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  score     Int
+  riskLevel RiskLevel
+  factors   Json
+
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+  @@index([createdAt])
+}
+
+model EmailTemplate {
+  id String @id @default(uuid())
+
+  name    String
+  subject String
+  body    String @db.Text
+
+  category TemplateCategory?
+  isActive Boolean           @default(true)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  emails EmailLog[]
+
+    // NEW: relation with campaigns
+  campaigns EmailCampaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([category])
+}
+
+model EmailLog {
+  id String @id @default(uuid())
+
+  fromEmail String?
+  toEmail   String
+
+  // NEW: optional name of recipient
+  recipientName String?
+
+  // UPDATED: support multiple CC/BCC
+  ccEmails  String[]
+  bccEmails String[]
+
+  subject String
+  body    String @db.Text
+
+  status   EmailStatus    @default(SENT)
+  provider EmailProvider?
+
+  direction EmailDirection @default(OUTBOUND)
+  folder    EmailFolder    @default(SENT)
+
+  messageId String?
+  threadId  String?
+  inReplyTo String?
+
+  // Template relation
+  templateId String?
+  template   EmailTemplate? @relation(fields: [templateId], references: [id])
+
+  // NEW: Campaign relation (for bulk emails)
+  campaignId String?
+  campaign   EmailCampaign? @relation(fields: [campaignId], references: [id])
+
+  // CRM relations
+  dealId String?
+  deal   Deal? @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  // Sender
+  sentById String?
+  sentBy   User? @relation(fields: [sentById], references: [id], onDelete: SetNull)
+
+  // Email analytics
+  opened  Boolean @default(false)
+  replied Boolean @default(false)
+  clicked Boolean @default(false)
+
+  // Attachments
+  attachments EmailAttachment[] @relation("EmailAttachments")
+
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+  @@index([contactId])
+  @@index([accountId])
+  @@index([sentById])
+  @@index([templateId])
+  @@index([campaignId])
+  @@index([threadId])
+  @@index([toEmail])
+  @@index([subject])
+}
+
+model WhatsAppMessage {
+  id String @id @default(uuid())
+
+  phoneNumber String
+  messageBody String @db.Text
+
+  direction WhatsAppDirection
+  status    WhatsAppStatus @default(SENT)
+
+  metaMessageId String?  // WhatsApp message id from Meta
+
+  // CRM relations
+  dealId String?
+  deal   Deal? @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  // Sender (CRM user)
+  sentById String?
+  sentBy   User? @relation(fields: [sentById], references: [id], onDelete: SetNull)
+
+  sentAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([contactId])
+  @@index([dealId])
+  @@index([accountId])
+  @@index([sentById])
+  @@index([metaMessageId])
+}
+
+
+
+model EmailCampaign {
+  id String @id @default(uuid())
+
+  name String
+  subject String
+
+  status CampaignStatus @default(DRAFT)
+
+  templateId String?
+  template   EmailTemplate? @relation(fields: [templateId], references: [id])
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  totalRecipients Int @default(0)
+  sentCount       Int @default(0)
+  failedCount     Int @default(0)
+
+  emails EmailLog[]
+
+  createdAt DateTime @default(now())
+
+  @@index([createdById])
+}
+
+model EmailAttachment {
+  id String @id @default(uuid())
+
+  fileName String
+  fileUrl  String   // always store URL, not path
+  fileType String?  // 🔥 ADD THIS
+  fileSize Int?
+
+  folder   String?  // 🔥 "2026-03-16" (your date folder)
+  uploadedAt DateTime @default(now()) // 🔥 better than createdAt
+
+  emailId String
+  email   EmailLog @relation("EmailAttachments", fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([emailId])
+  @@index([folder]) // 🔥 useful later
+}
+
+model CalendarIntegration {
+  id String @id @default(uuid())
+
+  provider CalendarProvider @default(GOOGLE)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken  String @db.Text
+  refreshToken String @db.Text
+  tokenExpiry  DateTime?
+
+  calendarEmail String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, provider]) // 🔥 KEY FIX
+}
+
+model Meeting {
+  id String @id @default(uuid())
+
+  title       String
+  description String?
+
+  location String?
+
+  startTime DateTime
+  endTime   DateTime
+
+  status MeetingStatus @default(SCHEDULED)
+
+  provider CalendarProvider @default(GOOGLE)
+
+  googleEventId String? @unique
+  googleUpdatedAt DateTime?
+  microsoftEventId String? @unique
+  meetingLink   String?
+
+  organizerId String
+  organizer   User @relation(fields: [organizerId], references: [id])
+
+  dealId String?
+  deal   Deal? @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  attendees MeetingAttendee[]
+  reminders MeetingReminder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startTime])
+  @@index([organizerId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([accountId])
+}
+
+model MeetingAttendee {
+  id String @id @default(uuid())
+
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  email String
+  name  String?
+
+  responseStatus AttendeeStatus?
+
+  createdAt DateTime @default(now())
+
+  @@index([meetingId])
+  @@index([contactId])
+  @@unique([meetingId, email])
+}
+
+model MeetingReminder {
+  id String @id @default(uuid())
+
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  remindAt DateTime
+
+  type ReminderType
+
+  isSent Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([remindAt])
+  @@index([meetingId])
+}
+model DealAssignment {
+  id String @id @default(uuid())
+
+  dealId String
+  userId String
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([dealId, userId])
+}
+
+model ContactAssignment {
+  id String @id @default(uuid())
+
+  contactId String
+  userId String
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, userId])
+}
+
+model AccountAssignment {
+  id String @id @default(uuid())
+
+  accountId String
+  userId String
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, userId])
+}
+
+model Item {
+  id          String  @id @default(uuid())
+
+  category    String?
+  sku         String?
+  name        String?
+  description String?
+
+  basePrice    Float?
+
+  quantity     Float? @default(1)
+  unitPrice    Float?
+  pricingMode  String? @default("parent_only")
+  discount     Float? @default(0)
+
+  make           String?
+  mfgPartNo      String?
+  uom            String?
+  defaultRemarks String?
+
+  parentId String?
+  parent   Item?   @relation("ItemHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Item[]  @relation("ItemHierarchy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quotationItems QuotationItem[]
+
+  @@index([parentId])
+  @@index([sku])
+}
+
+model Quotation {
+  id            String   @id @default(uuid())
+
+  quotationNo   String
+  quotationType QuotationType @default(QUOTATION)
+
+  version       Int
+  isLatest      Boolean  @default(true)
+
+  parentQuotationId String?
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  dealId String
+  deal   Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  issueDate  DateTime
+  validUntil DateTime?
+
+  status QuotationStatus @default(DRAFT)
+
+  subtotal       Float @default(0)
+  discountTotal  Float @default(0)
+  taxTotal       Float @default(0)
+  grandTotal     Float @default(0)
+
+  notes String? @db.Text
+  terms String? @db.Text
+  paymentTerms   Json?
+  deliveryTerms  Json?
+  importantNotes Json?
+
+  revisionReason String? @db.Text // 🔥 NEW: Track reason for revision (e.g., "Creation", "Client Request")
+  
+  refDocuments   String? @db.Text
+  techPropRef    String? @db.Text
+
+  items QuotationItem[]
+
+  approvals QuotationApproval[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([quotationNo, version])
+  @@index([quotationNo])
+  @@index([isLatest])
+  @@index([accountId])
+  @@index([dealId])
+}
+
+model QuotationApproval {
+  id String @id @default(uuid())
+
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  action String  // APPROVED | REJECTED | SUBMITTED | RESUBMITTED
+
+  comment String? @db.Text
+
+  actedById String
+  actedBy   User @relation(fields: [actedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([quotationId])
+  @@index([actedById])
+}
+
+model QuotationItem {
+  id String @id @default(uuid())
+
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  itemId String?
+  item   Item? @relation(fields: [itemId], references: [id])
+
+  // ✅ SNAPSHOT DATA (IMPORTANT)
+  sku         String
+  description String?
+  category    String?   // ✅ ADD THIS LINE
+
+
+  // ✅ NEW — SNAPSHOT FROM ITEM
+  make      String?
+  mfgPartNo String?
+  uom       String?
+
+  // ✅ USER EDITABLE
+  remarks String?
+
+  quantity Float
+  price    Float
+  discount Float @default(0)
+
+  subItems QuotationSubItem[]
+
+  lineTotal Float
+
+  createdAt DateTime @default(now())
+
+  @@index([quotationId])
+  @@index([itemId])
+}
+
+model QuotationSubItem {
+  id String @id @default(uuid())
+
+  quotationItemId String
+  quotationItem   QuotationItem @relation(fields: [quotationItemId], references: [id], onDelete: Cascade)
+
+  itemId String?   // reference to Item (child)
+
+  // 🔥 SNAPSHOT FIELDS (FIX)
+  name       String
+  sku        String?
+  category   String?
+  make       String?   // ✅ NEW
+  mfgPartNo  String?   // ✅ NEW
+  uom        String?   // ✅ NEW
+
+  description String?
+  remarks           String?
+
+  quantity Float
+  price    Float
+  discount Float @default(0)
+
+  lineTotal Float
+
+  createdAt DateTime @default(now())
+
+  @@index([quotationItemId])
+}

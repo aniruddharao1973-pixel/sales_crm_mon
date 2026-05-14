@@ -1,0 +1,257 @@
+.flipbook-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+.flipbook-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 2000px;
+  overflow: hidden;
+  padding: 40px; 
+}
+
+.flipbook-wrapper {
+  box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.8), 
+              0 30px 60px -30px rgba(0, 0, 0, 0.9),
+              0 0 100px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  background: #111;
+  transition: transform 0.3s ease-out;
+  overflow: hidden;
+  position: relative;
+  contain: paint; /* Hard clip everything inside this wrapper */
+}
+
+.page {
+  background-color: #ffffff;
+  overflow: hidden;
+  position: relative;
+  /* Remove individual shadows to prevent overlapping artifacts during flip */
+  box-shadow: none;
+  border-right: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Spine shadow effect - refined for better contrast */
+.page::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Shadow on the right side of a left page */
+.page:nth-child(even)::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.12), transparent);
+}
+
+/* Shadow on the left side of a right page */
+.page:nth-child(odd)::after {
+  left: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.12), transparent);
+}
+
+.page-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  position: relative;
+  /* Force hardware acceleration for smoother rendering */
+  transform: translateZ(0);
+}
+
+/* Ensure the canvas fills the container correctly */
+.react-pdf__Page {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: white !important;
+}
+
+.react-pdf__Page__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.page-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Hardcover Styles */
+.page-cover {
+  background: linear-gradient(135deg, #37306B 0%, #1e1b4b 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px 0 0 4px;
+  box-shadow: inset -5px 0 10px rgba(0,0,0,0.3);
+}
+
+.page-cover-right {
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 5px 0 10px rgba(0,0,0,0.3);
+}
+
+/* Page Turning Effects */
+.stf__parent {
+  background-color: transparent !important;
+}
+
+/* Center the cover page by shifting the 2-page spread */
+.stf-flipbook.is-cover {
+  transform: translateX(-25%) !important;
+}
+
+/* Ensure smooth transition for the shift */
+.stf-flipbook {
+  transition: transform 0.5s ease-in-out !important;
+}
+
+.stf__block {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Controls */
+.flipbook-controls {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  background: rgba(15, 23, 42, 0.9); /* Deep slate for high contrast */
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
+  z-index: 10000;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.control-btn {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  color: #ffffff; /* Pure white icons */
+  transition: all 0.2s;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateY(-2px);
+  opacity: 1;
+}
+
+.control-btn:active {
+  transform: translateY(0);
+}
+
+.page-number {
+  color: #ffffff; /* Pure white text */
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 100px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Close Button */
+.flipbook-close {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.flipbook-close:hover {
+  background: #ef4444;
+  transform: rotate(90deg);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Loading State */
+.flipbook-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  color: #fff;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: flip-spin 1s linear infinite;
+}
+
+@keyframes flip-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .flipbook-controls {
+    bottom: 20px;
+    padding: 8px 12px;
+  }
+  
+  .flipbook-close {
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+  }
+}
