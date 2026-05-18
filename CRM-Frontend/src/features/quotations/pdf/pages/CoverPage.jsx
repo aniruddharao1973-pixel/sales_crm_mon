@@ -2,7 +2,7 @@
 
 import { Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 import { PDF_COLORS, PDF_META } from "../quotationPdfTheme";
-import { fmtDate, safeText } from "../quotationPdfUtils";
+import { fmtDate, safeText, formatPhone } from "../quotationPdfUtils";
 
 const styles = StyleSheet.create({
   page: {
@@ -235,7 +235,7 @@ export default function CoverPage({ data }) {
             <Row label="Address" value={cover.address} />
             <Row label="Contact" value={cover.contactName} />
             <Row label="Department" value={cover.department} />
-            <Row label="Phone No." value={cover.phone} />
+            <Row label="Phone No." value={formatPhone(cover.phone)} />
             <Row label="Email" value={cover.email} last />
           </View>
         </View>
@@ -283,7 +283,7 @@ export default function CoverPage({ data }) {
               <Text style={styles.contactEmail}>{safeText(c.email)}</Text>
             </View>
             <View style={[styles.contactCell, styles.contactCellLast]}>
-              <Text>{safeText(c.phone)}</Text>
+              <Text>{formatPhone(c.phone)}</Text>
             </View>
           </View>
         ))}

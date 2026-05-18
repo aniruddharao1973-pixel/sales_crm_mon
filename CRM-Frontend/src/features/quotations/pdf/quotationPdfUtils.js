@@ -13,6 +13,23 @@ export function safeText(value, fallback = "-") {
   return String(value);
 }
 
+export function formatPhone(value) {
+  if (!value) return "-";
+  let cleaned = String(value).replace(/\D/g, "");
+
+  // Handle Indian mobile numbers with 91 prefix
+  if (cleaned.length === 12 && cleaned.startsWith("91")) {
+    cleaned = cleaned.substring(2);
+  }
+
+  // Format 10-digit numbers as +91 XXXXX XXXXX
+  if (cleaned.length === 10) {
+    return `+91 ${cleaned.substring(0, 5)} ${cleaned.substring(5)}`;
+  }
+
+  return String(value);
+}
+
 export function normalizeLines(value, fallbackLines = []) {
   if (Array.isArray(value) && value.length) {
     return value.filter(Boolean).map(String);

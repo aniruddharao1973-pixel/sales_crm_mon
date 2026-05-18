@@ -17,6 +17,10 @@ export const getContacts = asyncHandler(async (req, res) => {
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
+  if (req.user.role === "TSE" && parseInt(limit) > 100) {
+    throw new ApiError(403, "Forbidden: Export not allowed for your role");
+  }
+
   const where = {
     ...(search && {
       OR: [
@@ -29,7 +33,7 @@ export const getContacts = asyncHandler(async (req, res) => {
     ...(accountId && { accountId }),
   };
 
-  if (req.user.role !== "ADMIN") {
+  if (req.user.role === "KAM") {
     where.OR = [
       { contactOwnerId: req.user.id },
       { assignments: { some: { userId: req.user.id } } },
@@ -39,9 +43,22 @@ export const getContacts = asyncHandler(async (req, res) => {
             { accountOwnerId: req.user.id },
             { keyAccountManagerId: req.user.id },
             { assignments: { some: { userId: req.user.id } } },
-            { deals: { some: { personInCharge: { equals: req.user.name, mode: "insensitive" } } } },
-            { deals: { some: { assignments: { some: { userId: req.user.id } } } } },
           ],
+        },
+      },
+    ];
+  } else if (req.user.role === "TSE") {
+    where.OR = [
+      { contactOwnerId: req.user.id },
+      { assignments: { some: { userId: req.user.id } } },
+      {
+        deals: {
+          some: {
+            OR: [
+              { personInCharge: { equals: req.user.name, mode: "insensitive" } },
+              { assignments: { some: { userId: req.user.id } } },
+            ],
+          },
         },
       },
     ];
@@ -123,7 +140,7 @@ export const getContact = asyncHandler(async (req, res) => {
   const contact = await prisma.contact.findFirst({
     where: {
       id: req.params.id,
-      ...(req.user.role !== "ADMIN" && {
+      ...(req.user.role === "KAM" && {
         OR: [
           { contactOwnerId: req.user.id },
           { assignments: { some: { userId: req.user.id } } },
@@ -133,9 +150,23 @@ export const getContact = asyncHandler(async (req, res) => {
                 { accountOwnerId: req.user.id },
                 { keyAccountManagerId: req.user.id },
                 { assignments: { some: { userId: req.user.id } } },
-                { deals: { some: { personInCharge: { equals: req.user.name, mode: "insensitive" } } } },
-                { deals: { some: { assignments: { some: { userId: req.user.id } } } } },
               ],
+            },
+          },
+        ],
+      }),
+      ...(req.user.role === "TSE" && {
+        OR: [
+          { contactOwnerId: req.user.id },
+          { assignments: { some: { userId: req.user.id } } },
+          {
+            deals: {
+              some: {
+                OR: [
+                  { personInCharge: { equals: req.user.name, mode: "insensitive" } },
+                  { assignments: { some: { userId: req.user.id } } },
+                ],
+              },
             },
           },
         ],
@@ -237,7 +268,15 @@ export const updateContact = asyncHandler(async (req, res) => {
   }
 
   // 🛡️ Ownership protection
-  if (req.user.role !== "ADMIN") {
+  // 🛡️ Role-based protection
+  if (["KAM", "TSE"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Your role does not have permission to update contacts");
+  }
+
+  if (
+    !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role) &&
+    existing.contactOwnerId !== req.user.id
+  ) {
     const assigned = await prisma.contactAssignment.findFirst({
       where: {
         contactId: req.params.id,
@@ -300,8 +339,8 @@ export const updateContact = asyncHandler(async (req, res) => {
 // @desc    Delete contact
 // @route   DELETE /api/contacts/:id
 export const deleteContact = asyncHandler(async (req, res) => {
-  if (req.user.role === "SALES_REP") {
-    throw new ApiError(403, "Forbidden: Sales Reps cannot delete records");
+  if (["KAM", "TSE"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Your role does not have permission to delete contacts");
   }
 
   const existing = await prisma.contact.findUnique({
@@ -323,7 +362,7 @@ export const getContactsDropdown = asyncHandler(async (req, res) => {
   const { accountId } = req.query;
 
   const where = accountId ? { accountId } : {};
-  if (req.user.role !== "ADMIN") {
+  if (!["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role)) {
     where.OR = [
       { assignments: { some: { userId: req.user.id } } },
       { account: { keyAccountManagerId: req.user.id } },
@@ -343,6 +382,9 @@ export const getContactsDropdown = asyncHandler(async (req, res) => {
 // @desc    Import contacts from Excel
 // @route   POST /api/contacts/import
 export const importContacts = asyncHandler(async (req, res) => {
+  if (!["SUPER_ADMIN", "TSL"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Only Super Admin and TSL can import records");
+  }
   if (!req.file) {
     throw new ApiError(400, "Please upload an Excel file");
   }
@@ -374,6 +416,21 @@ export const importContacts = asyncHandler(async (req, res) => {
       .toLowerCase();
     accountMap[cleanDbName] = acc.id;
   });
+
+  // Pre-load users for mapping owner names
+  const allUsers = await prisma.user.findMany({
+    select: { id: true, name: true, username: true },
+  });
+
+  const userMap = {};
+  allUsers.forEach((u) => {
+    if (u.name)
+      userMap[u.name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()] = u.id;
+    if (u.username)
+      userMap[u.username.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()] = u.id;
+  });
+
+  const DEFAULT_OWNER_ID = req.user.id;
 
   const parseLeadSource = (src) => {
     if (!src) return null;
@@ -493,9 +550,19 @@ export const importContacts = asyncHandler(async (req, res) => {
       mailingZip: rowData["mailingzip"] || rowData["zipcode"] || null,
       description: rowData["description"] || null,
       accountId: accountId,
-      contactOwnerId: req.user.id,
       modifiedById: req.user.id,
     };
+
+    // Resolve owner → fallback to logined user
+    const rawOwner = rowData["contactowner"];
+    let contactOwnerId = DEFAULT_OWNER_ID;
+    if (rawOwner) {
+      const cleanOwner = String(rawOwner)
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toLowerCase();
+      contactOwnerId = userMap[cleanOwner] || DEFAULT_OWNER_ID;
+    }
+    payload.contactOwnerId = contactOwnerId;
 
     // Remove empty nulls to prevent erasing existing data
     const updatePayload = { ...payload };

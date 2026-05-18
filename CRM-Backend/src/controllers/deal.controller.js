@@ -111,6 +111,10 @@ export const getDeals = asyncHandler(async (req, res) => {
   const skip = isExport ? 0 : (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
 
+  if (req.user.role === "TSE" && parseInt(limit) > 100) {
+    throw new ApiError(403, "Forbidden: Export not allowed for your role");
+  }
+
   // Define search filter
   const searchFilter = search
     ? {
@@ -151,21 +155,25 @@ export const getDeals = asyncHandler(async (req, res) => {
     ...(type && { type }),
     ...(productGroup && { productGroup }),
 
-    // ✅ ASSIGNMENT BASED ACCESS
-    ...(req.user.role !== "ADMIN" && {
+    // ✅ ROLE BASED ACCESS
+    ...(["KAM", "TSE"].includes(req.user.role) && {
       OR: [
-        { dealOwnerId: req.user.id },
         { personInCharge: { equals: req.user.name, mode: "insensitive" } },
         { assignments: { some: { userId: req.user.id } } },
-        {
-          account: {
-            OR: [
-              { accountOwnerId: req.user.id },
-              { keyAccountManagerId: req.user.id },
-              { assignments: { some: { userId: req.user.id } } },
-            ],
-          },
-        },
+        ...(req.user.role === "KAM"
+          ? [
+              { dealOwnerId: req.user.id },
+              {
+                account: {
+                  OR: [
+                    { accountOwnerId: req.user.id },
+                    { keyAccountManagerId: req.user.id },
+                    { assignments: { some: { userId: req.user.id } } },
+                  ],
+                },
+              },
+            ]
+          : []),
       ],
     }),
   };
@@ -231,13 +239,11 @@ export const bulkDeleteDeals = asyncHandler(async (req, res) => {
     });
   }
 
-  // If user is SALES_REP, they can only delete their own deals
-  // We'll filter the IDs to ensure they own them if they aren't ADMIN/MANAGER
-  let deleteWhere = { id: { in: ids } };
-
-  if (req.user.role === "SALES_REP") {
-    deleteWhere.dealOwnerId = req.user.id;
+  if (!["SUPER_ADMIN", "TSL"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Only Super Admin and TSL can bulk delete deals");
   }
+
+  let deleteWhere = { id: { in: ids } };
 
   const { count } = await prisma.deal.deleteMany({
     where: deleteWhere,
@@ -258,20 +264,24 @@ export const getDeal = asyncHandler(async (req, res) => {
   const deal = await prisma.deal.findFirst({
     where: {
       id: req.params.id,
-      ...(req.user.role !== "ADMIN" && {
+      ...(["KAM", "TSE"].includes(req.user.role) && {
         OR: [
-          { dealOwnerId: req.user.id },
           { personInCharge: { equals: req.user.name, mode: "insensitive" } },
           { assignments: { some: { userId: req.user.id } } },
-          {
-            account: {
-              OR: [
-                { accountOwnerId: req.user.id },
-                { keyAccountManagerId: req.user.id },
-                { assignments: { some: { userId: req.user.id } } },
-              ],
-            },
-          },
+          ...(req.user.role === "KAM"
+            ? [
+                { dealOwnerId: req.user.id },
+                {
+                  account: {
+                    OR: [
+                      { accountOwnerId: req.user.id },
+                      { keyAccountManagerId: req.user.id },
+                      { assignments: { some: { userId: req.user.id } } },
+                    ],
+                  },
+                },
+              ]
+            : []),
         ],
       }),
     },
@@ -435,33 +445,34 @@ export const updateDeal = asyncHandler(async (req, res) => {
   if (!existing) throw new ApiError(404, "Deal not found");
 
   // 🛡️ Ownership protection
-  if (req.user.role !== "ADMIN" && existing.dealOwnerId !== req.user.id) {
-    // Hierarchical access check
-    const authorized = await prisma.deal.findFirst({
-      where: {
-        id: req.params.id,
-        OR: [
-          { personInCharge: { equals: req.user.name, mode: "insensitive" } },
-          { assignments: { some: { userId: req.user.id } } },
-          {
-            account: {
-              OR: [
-                { accountOwnerId: req.user.id },
-                { keyAccountManagerId: req.user.id },
-                { assignments: { some: { userId: req.user.id } } },
-              ],
-            },
-          },
-        ],
-      },
+  if (req.user.role === "KAM") {
+    throw new ApiError(
+      403,
+      "Forbidden: Your role does not have permission to update deals",
+    );
+  }
+
+  if (req.user.role === "TSE") {
+    const isPIC =
+      existing.personInCharge &&
+      existing.personInCharge.toLowerCase() === req.user.name.toLowerCase();
+    const isAssigned = await prisma.dealAssignment.findFirst({
+      where: { dealId: existing.id, userId: req.user.id },
     });
 
-    if (!authorized) {
+    if (!isPIC && !isAssigned) {
       throw new ApiError(
         403,
-        "Forbidden: You do not have permission to update this deal",
+        "Forbidden: You can only update your assigned deals",
       );
     }
+  }
+
+  if (
+    !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role) &&
+    existing.dealOwnerId !== req.user.id
+  ) {
+    throw new ApiError(403, "Forbidden: You do not have permission to update this deal");
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -562,8 +573,8 @@ export const updateDeal = asyncHandler(async (req, res) => {
    DELETE DEAL
 ========================================================= */
 export const deleteDeal = asyncHandler(async (req, res) => {
-  if (req.user.role === "SALES_REP") {
-    throw new ApiError(403, "Forbidden: Sales Reps cannot delete records");
+  if (["KAM", "TSE"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Your role does not have permission to delete deals");
   }
 
   await prisma.deal.delete({
@@ -593,6 +604,9 @@ export const updateStageHistoryNote = asyncHandler(async (req, res) => {
    POST /api/deals/import
 =========================================================  */
 export const importDeals = asyncHandler(async (req, res) => {
+  if (!["SUPER_ADMIN", "TSL"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Only Super Admin and TSL can import records");
+  }
   if (!req.file) {
     throw new ApiError(400, "Please upload an Excel file");
   }
@@ -611,7 +625,7 @@ export const importDeals = asyncHandler(async (req, res) => {
     prisma.user.findMany({
       select: { id: true, name: true, username: true, role: true },
     }),
-    prisma.user.findFirst({ where: { role: "ADMIN" } }),
+    prisma.user.findFirst({ where: { role: "SUPER_ADMIN" } }),
   ]);
 
   const accountMap = {};
@@ -636,7 +650,7 @@ export const importDeals = asyncHandler(async (req, res) => {
       userMap[u.username.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()] = u.id;
   });
 
-  const ADMIN_ID = adminUser?.id || req.user.id;
+  const ADMIN_ID = req.user.id;
 
   // --- Enum parsers ---
   const parseDealStage = (s) => {
@@ -919,7 +933,7 @@ export const importDeals = asyncHandler(async (req, res) => {
 ========================================================= */
 export const getPipelineStats = asyncHandler(async (req, res) => {
   const baseWhere = {
-    ...(req.user.role !== "ADMIN" && {
+    ...(!["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role) && {
       assignments: {
         some: { userId: req.user.id },
       },
@@ -984,6 +998,20 @@ export const getDealByLogId = asyncHandler(async (req, res) => {
 
   if (!deal) {
     throw new ApiError(404, "Deal not found");
+  }
+
+  // 🔥 AUTHORIZATION CHECK: TSE/KAM can only see their assigned deals
+  if (["TSE", "KAM"].includes(req.user.role)) {
+    const isPIC = deal.personInCharge && deal.personInCharge.toLowerCase() === req.user.name.toLowerCase();
+    
+    // Check assignments
+    const isAssigned = await prisma.dealAssignment.findFirst({
+      where: { dealId: deal.id, userId: req.user.id }
+    });
+
+    if (!isPIC && !isAssigned) {
+      throw new ApiError(403, `Unauthorized: This lead is assigned to ${deal.personInCharge || "another user"}. You cannot create quotations for it.`);
+    }
   }
 
   const contacts = deal.contact ? [deal.contact] : [];

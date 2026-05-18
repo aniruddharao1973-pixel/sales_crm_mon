@@ -73,9 +73,24 @@ const styles = StyleSheet.create({
 });
 
 function SimpleSection({ title, rows = [] }) {
+  const mainCode = title.split(" ")[0];
+  const mainTitle = title.split(" ").slice(1).join(" ");
+
   return (
     <>
-      <Text style={styles.sectionHead}>{title}</Text>
+      <View style={[styles.row, { backgroundColor: PDF_COLORS.blueSoft }]}>
+        <Text style={[styles.num, { backgroundColor: PDF_COLORS.blue, color: "white" }]}>
+          {mainCode}
+        </Text>
+        <Text
+          style={[
+            styles.label,
+            { width: "90%", borderRightWidth: 0, color: PDF_COLORS.blue, textTransform: "uppercase" },
+          ]}
+        >
+          {mainTitle}
+        </Text>
+      </View>
       {rows.map((row, idx) => (
         <View key={idx} style={[styles.row, idx === rows.length - 1 ? styles.rowLast : null]}>
           <Text style={styles.num}>{safeText(row.code || row.no || row[0])}</Text>
@@ -103,11 +118,27 @@ export default function BankDetailsPage({ data }) {
             <SimpleSection title="1 ACCOUNT DETAILS" rows={accountDetails} />
             {paymentInstructions.length > 0 ? (
               <>
-                <Text style={styles.sectionHead}>2 Micrologic Payment Cheque / DD / Pay Order</Text>
-                {paymentInstructions.map((line, idx) => (
-                  <Text key={idx} style={styles.bullet}>
-                    {`➢ ${line}`}
+                <View style={[styles.row, { backgroundColor: PDF_COLORS.blueSoft }]}>
+                  <Text style={[styles.num, { backgroundColor: PDF_COLORS.blue, color: "white" }]}>2</Text>
+                  <Text style={[styles.label, { width: "90%", borderRightWidth: 0, color: PDF_COLORS.blue, textTransform: "uppercase" }]}>
+                    Micrologic Payment Cheque / DD / Pay Order
                   </Text>
+                </View>
+                {paymentInstructions.map((line, idx) => (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.row,
+                      idx === paymentInstructions.length - 1 ? null : null,
+                    ]}
+                  >
+                    <Text style={[styles.num, { backgroundColor: "white" }]}></Text>
+                    <View style={[styles.value, { width: "90%", paddingLeft: 12 }]}>
+                      <Text style={{ fontSize: 8, textDecoration: "underline" }}>
+                        {`➢  ${line}`}
+                      </Text>
+                    </View>
+                  </View>
                 ))}
               </>
             ) : null}

@@ -53,11 +53,17 @@ function QuotationDetail() {
   const role = user?.role;
   const statusUpper = (data?.status || "").toUpperCase();
 
-  const isSalesRep = role === "SALES_REP";
-  const isAdmin = role === "ADMIN";
-  const isKAM = user?.id === data?.account?.keyAccountManager?.id;
-  const isPIC = user?.name === data?.deal?.personInCharge;
-  const canApprove = isAdmin || isKAM;
+  const isTSE = role === "TSE";
+  const isPowerUser = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(role);
+  const isKAM =
+    role === "KAM" && user?.id === data?.account?.keyAccountManagerId;
+  const isPIC =
+    user?.name &&
+    data?.deal?.personInCharge &&
+    user.name.toLowerCase() === data.deal.personInCharge.toLowerCase();
+
+  const canApprove = isPowerUser || isKAM;
+  const canSubmit = isPowerUser || (isTSE && isPIC) || isKAM;
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectComment, setRejectComment] = useState("");
   const [showReviseModal, setShowReviseModal] = useState(false);
@@ -114,7 +120,7 @@ function QuotationDetail() {
     try {
       setActionLoading(true);
       // Filename logic
-      const typeLabel = type.charAt(0) + type.slice(1).toLowerCase();
+      const typeLabel = type === "FIRM" ? "Firm Quotation" : (type.charAt(0) + type.slice(1).toLowerCase());
       const logId = data.deal?.dealLogId || "";
       const projectName = data.deal?.dealName || "";
       const revision =
@@ -136,16 +142,37 @@ function QuotationDetail() {
       );
       const blob = await pdf(doc).toBlob();
 
-      // If FIRM, download directly. Others open in browser
+      // If FIRM, try "Save As" dialog first, otherwise direct download
       if (type === "FIRM") {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        if (window.showSaveFilePicker) {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: fileName,
+              types: [{
+                description: 'PDF Document',
+                accept: {'application/pdf': ['.pdf']},
+              }],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+          } catch (err) {
+            // If user cancels or error, we don't need to do anything unless it's a real error
+            if (err.name !== 'AbortError') {
+              throw err;
+            }
+          }
+        } else {
+          // Fallback to direct download
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
       } else {
         // Use File object for better browser naming hints
         const file = new File([blob], fileName, { type: "application/pdf" });
@@ -429,20 +456,7 @@ function QuotationDetail() {
 
                   <div className="h-8 w-px bg-white/10 mx-1" />
 
-                  {/* <div className="relative flex-shrink-0">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-400 to-violet-500 text-white shadow-lg">
-                      <FileText className="h-4 w-4" />
-                    </div>
-                  </div> */}
 
-                  {/* <div className="flex items-center gap-3 min-w-0">
-                    <h2 className="truncate text-lg font-black tracking-tight text-white drop-shadow-sm lg:text-[20px]">
-                      {data.quotationType === "BUDGETARY" ? "Budgetary Quotation" : data.quotationType === "FIRM" ? "Firm Quotation" : "Quotation"}
-                      <span className="mx-2 text-white/40 font-normal">—</span>
-                      <span className="text-white/90">{data.deal?.dealName || "—"}</span>
-                    </h2>
-
-                    <div className="flex items-center gap-2"> */}
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <h2
@@ -454,17 +468,7 @@ function QuotationDetail() {
         break-words
       "
                       >
-                        <span className="whitespace-nowrap">
-                          {data.quotationType === "BUDGETARY"
-                            ? "Budgetary Quotation"
-                            : data.quotationType === "FIRM"
-                              ? "Firm Quotation"
-                              : "Quotation"}
-                        </span>
-
-                        <span className="mx-2 text-white/40 font-normal">
-                          —
-                        </span>
+           
 
                         <span className="text-white/90">
                           {data.deal?.dealName || "—"}
@@ -482,16 +486,18 @@ function QuotationDetail() {
                         className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] backdrop-blur-sm ${
                           statusUpper === "APPROVED"
                             ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
-                            : statusUpper === "SUBMITTED"
-                              ? "border-amber-400/40 bg-amber-400/15 text-amber-300"
-                              : statusUpper === "REJECTED"
-                                ? "border-rose-400/40 bg-rose-400/15 text-rose-300"
-                                : "border-slate-400/30 bg-white/10 text-slate-300"
+                            : statusUpper === "AUTHORIZED"
+                              ? "border-sky-400/40 bg-sky-400/15 text-sky-300"
+                              : statusUpper === "SUBMITTED"
+                                ? "border-amber-400/40 bg-amber-400/15 text-amber-300"
+                                : statusUpper === "REJECTED"
+                                  ? "border-rose-400/40 bg-rose-400/15 text-rose-300"
+                                  : "border-slate-400/30 bg-white/10 text-slate-300"
                         }`}
                       >
                         <span
                           className={`h-1 w-1 rounded-full animate-pulse ${
-                            statusUpper === "APPROVED"
+                            statusUpper === "AUTHORIZED" || statusUpper === "APPROVED"
                               ? "bg-emerald-400"
                               : statusUpper === "SUBMITTED"
                                 ? "bg-amber-400"
@@ -508,7 +514,7 @@ function QuotationDetail() {
 
                 {/* RIGHT SIDE — ACTION BUTTONS */}
                 <div className="flex flex-wrap items-center gap-3">
-                  {(isAdmin || isPIC || isKAM) && (
+                  {(isPowerUser || role === "KAM" || role === "TSE") && (
                     <div className="relative group">
                       <button className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 text-xs font-black text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20">
                         <Download className="h-3.5 w-3.5 text-indigo-300" />
@@ -646,7 +652,7 @@ function QuotationDetail() {
                     </div>
                   )}
 
-                  {statusUpper === "APPROVED" && data?.isLatest && (
+                  {(statusUpper === "APPROVED" || statusUpper === "AUTHORIZED") && data?.isLatest && (
                     <button
                       onClick={() => {
                         setRevisionReason("");
@@ -681,18 +687,22 @@ function QuotationDetail() {
                     </button>
                   )}
 
-                  {canApprove && statusUpper === "SUBMITTED" && (
+                  {canApprove && (statusUpper === "SUBMITTED" || (statusUpper === "APPROVED" && isPowerUser)) && (
                     <button
                       onClick={handleApprove}
                       disabled={actionLoading}
                       className="inline-flex h-9 items-center gap-2 rounded-xl px-5 text-xs font-black text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                       style={{
-                        background: "linear-gradient(135deg, #10b981, #059669)",
-                        boxShadow: "0 4px 16px rgba(16,185,129,0.40)",
+                        background: statusUpper === "APPROVED"
+                          ? "linear-gradient(135deg, #0ea5e9, #0284c7)" // Sky blue for Authorize
+                          : "linear-gradient(135deg, #10b981, #059669)", // Emerald for Approve
+                        boxShadow: statusUpper === "APPROVED"
+                          ? "0 4px 16px rgba(14,165,233,0.40)"
+                          : "0 4px 16px rgba(16,185,129,0.40)",
                       }}
                     >
                       <FileCheck className="h-4 w-4" />
-                      Approve
+                      {statusUpper === "APPROVED" ? "Authorize" : "Approve"}
                     </button>
                   )}
 
@@ -711,9 +721,8 @@ function QuotationDetail() {
                     </button>
                   )}
 
-                  {((isAdmin && statusUpper !== "APPROVED") ||
-                    statusUpper === "DRAFT" ||
-                    statusUpper === "REJECTED") && (
+                  {((isPowerUser && statusUpper !== "APPROVED") ||
+                    ((isPIC || isKAM) && (statusUpper === "DRAFT" || statusUpper === "REJECTED"))) && (
                     <button
                       onClick={() => navigate(`/quotations/${id}/edit`)}
                       className="inline-flex h-9 items-center gap-2 rounded-xl bg-white/15 px-5 text-xs font-black text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/25 hover:scale-[1.02] active:scale-[0.98]"

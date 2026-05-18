@@ -27,7 +27,7 @@ export const register = asyncHandler(async (req, res) => {
       employeeId,
       email,
       password: hashedPassword,
-      role: role || "SALES_REP",
+      role: role || "TSE",
       mobile,
       maxDiscount: parseFloat(req.body.maxDiscount) || 0,
     },
@@ -228,6 +228,11 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  // 🛡️ TSL Protection: Cannot delete SUPER_ADMIN
+  if (req.user.role === "TSL" && user.role === "SUPER_ADMIN") {
+    throw new ApiError(403, "Forbidden: TSL cannot delete a Super Admin");
+  }
+
   // Prevent deleting yourself
   if (req.user.id === id) {
     throw new ApiError(400, "Cannot delete yourself");
@@ -273,6 +278,11 @@ export const updateUser = asyncHandler(async (req, res) => {
 
   if (!existingUser) {
     throw new ApiError(404, "User not found");
+  }
+
+  // 🛡️ TSL Protection: Cannot update SUPER_ADMIN
+  if (req.user.role === "TSL" && existingUser.role === "SUPER_ADMIN") {
+    throw new ApiError(403, "Forbidden: TSL cannot update a Super Admin");
   }
 
   // Prevent duplicate username
@@ -328,5 +338,76 @@ export const updateUser = asyncHandler(async (req, res) => {
     success: true,
     message: "User updated successfully",
     data: updatedUser,
+  });
+});
+
+// @desc    Change password
+// @route   PUT /api/auth/change-password
+export const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    throw new ApiError(400, "Please provide old and new password");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) {
+    throw new ApiError(401, "Invalid old password");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: { password: hashedPassword },
+  });
+
+  res.json({
+    success: true,
+    message: "Password changed successfully",
+  });
+});
+
+// @desc    Admin reset user password
+// @route   PUT /api/auth/users/:id/reset-password
+export const resetUserPassword = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    throw new ApiError(400, "Please provide a new password");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // 🛡️ TSL Protection: Cannot reset SUPER_ADMIN password
+  if (req.user.role === "TSL" && user.role === "SUPER_ADMIN") {
+    throw new ApiError(403, "Forbidden: TSL cannot reset a Super Admin's password");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+  await prisma.user.update({
+    where: { id },
+    data: { password: hashedPassword },
+  });
+
+  res.json({
+    success: true,
+    message: `Password for ${user.name} has been reset successfully`,
   });
 });

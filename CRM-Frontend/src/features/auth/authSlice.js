@@ -480,6 +480,38 @@ export const deleteUser = createAsyncThunk(
   },
 );
 
+/* ================= CHANGE PASSWORD ================= */
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async (passwordData, { rejectWithValue }) => {
+    try {
+      const { data } = await API.put("/auth/change-password", passwordData);
+      return data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to change password",
+      );
+    }
+  },
+);
+
+/* ================= ADMIN RESET PASSWORD ================= */
+export const resetUserPassword = createAsyncThunk(
+  "auth/resetUserPassword",
+  async ({ id, newPassword }, { rejectWithValue }) => {
+    try {
+      const { data } = await API.put(`/auth/users/${id}/reset-password`, {
+        newPassword,
+      });
+      return data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to reset password",
+      );
+    }
+  },
+);
+
 /* ================= INITIAL STATE ================= */
 const storedUser = safeJSONParse(localStorage.getItem("user"));
 const storedToken = localStorage.getItem("token");

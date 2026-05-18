@@ -305,7 +305,6 @@ const AccountList = () => {
     0,
   );
 
-
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header & Stats Row */}
@@ -317,7 +316,9 @@ const AccountList = () => {
               {pagination?.total || accounts.length}
             </span>
           </h1>
-          <p className="text-xs text-slate-500">Manage and track your customer accounts</p>
+          <p className="text-xs text-slate-500">
+            Manage and track your customer accounts
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -327,8 +328,12 @@ const AccountList = () => {
               <BuildingOffice2Solid className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-xs font-medium text-purple-200 leading-none mb-0.5">Accounts</p>
-              <p className="text-sm font-bold leading-none">{pagination?.total || accounts.length}</p>
+              <p className="text-xs font-medium text-purple-200 leading-none mb-0.5">
+                Accounts
+              </p>
+              <p className="text-sm font-bold leading-none">
+                {pagination?.total || accounts.length}
+              </p>
             </div>
           </div>
 
@@ -338,8 +343,12 @@ const AccountList = () => {
               <UserGroupIcon className="w-4 h-4 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400 leading-none mb-0.5">Contacts</p>
-              <p className="text-sm font-bold text-emerald-600 leading-none">{totalContacts}</p>
+              <p className="text-xs font-medium text-slate-400 leading-none mb-0.5">
+                Contacts
+              </p>
+              <p className="text-sm font-bold text-emerald-600 leading-none">
+                {totalContacts}
+              </p>
             </div>
           </div>
         </div>
@@ -406,45 +415,83 @@ const AccountList = () => {
             {/* Right side: Actions */}
             <div className="flex items-center gap-2 self-end lg:self-auto">
               {/* Export */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportDropdown(!showExportDropdown)}
-                  disabled={!accounts.length}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-bold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-40 shadow-sm"
-                >
-                  <ArrowDownTrayIcon className="w-4 h-4" />
-                  <span className="hidden xl:inline">Export</span>
-                </button>
+              {currentUser?.role !== "TSE" && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExportDropdown(!showExportDropdown)}
+                    disabled={!accounts.length}
+                    className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-bold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-40 shadow-sm"
+                  >
+                    <ArrowDownTrayIcon className="w-4 h-4" />
+                    <span className="hidden xl:inline">Export</span>
+                  </button>
 
-                {showExportDropdown && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowExportDropdown(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
-                      <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100">Full Dataset</div>
-                      <button onClick={exportExcel} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 Export All - Excel</button>
-                      <button onClick={exportCSV} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📄 Export All - CSV</button>
-                      <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-y border-slate-100">Current View</div>
-                      <button onClick={exportCurrentPageExcel} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 Export Page - Excel</button>
-                      <button onClick={exportCurrentPageCSV} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📄 Export Page - CSV</button>
-                    </div>
-                  </>
-                )}
-              </div>
+                  {showExportDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowExportDropdown(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
+                        <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100">
+                          Full Dataset
+                        </div>
+                        <button
+                          onClick={exportExcel}
+                          className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]"
+                        >
+                          📊 Export All - Excel
+                        </button>
+                        <button
+                          onClick={exportCSV}
+                          className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]"
+                        >
+                          📄 Export All - CSV
+                        </button>
+                        <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-y border-slate-100">
+                          Current View
+                        </div>
+                        <button
+                          onClick={exportCurrentPageExcel}
+                          className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]"
+                        >
+                          📊 Export Page - Excel
+                        </button>
+                        <button
+                          onClick={exportCurrentPageCSV}
+                          className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]"
+                        >
+                          📄 Export Page - CSV
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Import */}
-              {(currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER") && (
+              {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) && (
                 <>
-                  <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleImport} />
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImport}
+                  />
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={importing}
                     className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-bold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-50 shadow-sm"
                   >
-                    {importing ? <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /> : <ArrowUpTrayIcon className="w-4 h-4" />}
-                    <span className="hidden xl:inline">{importing ? "Importing..." : "Import"}</span>
+                    {importing ? (
+                      <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <ArrowUpTrayIcon className="w-4 h-4" />
+                    )}
+                    <span className="hidden xl:inline">
+                      {importing ? "Importing..." : "Import"}
+                    </span>
                   </button>
                 </>
               )}
@@ -452,13 +499,15 @@ const AccountList = () => {
               <div className="w-px h-6 bg-slate-200 mx-1" />
 
               {/* New Account */}
-              <button
-                onClick={() => navigate("/accounts/new")}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 active:scale-[0.98] transition-all shadow-md shadow-[#3B2E7E]/20"
-              >
-                <PlusIcon className="w-5 h-5" />
-                <span className="hidden sm:inline">New Account</span>
-              </button>
+              {!["TSE", "KAM"].includes(currentUser?.role) && (
+                <button
+                  onClick={() => navigate("/accounts/new")}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 active:scale-[0.98] transition-all shadow-md shadow-[#3B2E7E]/20"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  <span className="hidden sm:inline">New Account</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -503,13 +552,15 @@ const AccountList = () => {
                   Clear Search
                 </button>
               ) : (
-                <button
-                  onClick={() => navigate("/accounts/new")}
-                  className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/25"
-                >
-                  <PlusIcon className="w-4 h-4 mr-1.5" />
-                  Create Account
-                </button>
+                !["TSE", "KAM"].includes(currentUser?.role) && (
+                  <button
+                    onClick={() => navigate("/accounts/new")}
+                    className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/25"
+                  >
+                    <PlusIcon className="w-4 h-4 mr-1.5" />
+                    Create Account
+                  </button>
+                )
               )}
             </div>
           ) : (
@@ -519,38 +570,37 @@ const AccountList = () => {
                 <table className="w-full min-w-[900px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-white border-b border-[#3B2E7E]/10">
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         Account
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         Phone
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         Industry
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         Owner
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         KAM
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         Contacts
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         Deals
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase px-5 py-3.5">
                         Status
                       </th>
-                      <th className="text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
+                      <th className="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider px-5 py-3.5">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {accounts.map((account, index) => {
-
                       return (
                         <tr
                           key={account.id}
@@ -571,11 +621,6 @@ const AccountList = () => {
                                 <p className="text-sm font-semibold text-slate-900 group-hover:text-[#3B2E7E] transition-colors truncate">
                                   {account.accountName}
                                 </p>
-                                {account.accountNumber && (
-                                  <p className="text-xs text-slate-400 truncate">
-                                    #{account.accountNumber}
-                                  </p>
-                                )}
                               </div>
                             </div>
                           </td>
@@ -609,7 +654,6 @@ const AccountList = () => {
                             )}
                           </td>
 
-
                           {/* Owner */}
                           <td className="px-5 py-4">
                             {account.owner?.name ? (
@@ -637,14 +681,14 @@ const AccountList = () => {
                           </td>
 
                           {/* Contacts */}
-                          <td className="px-5 py-4 text-center">
+                          <td className="px-5 py-4 text-left">
                             <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2.5 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
                               {account._count?.contacts || 0}
                             </span>
                           </td>
 
                           {/* Deals */}
-                          <td className="px-5 py-4 text-center">
+                          <td className="px-5 py-4 text-left">
                             <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2.5 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
                               {account._count?.deals || 0}
                             </span>
@@ -675,18 +719,21 @@ const AccountList = () => {
                               >
                                 <EyeIcon className="w-4 h-4" />
                               </button>
-                              {account.lifecycle !== "DEACTIVATED" && (
-                                <button
-                                  onClick={() =>
-                                    navigate(`/accounts/${account.id}/edit`)
-                                  }
-                                  className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                                  title="Edit"
-                                >
-                                  <PencilSquareIcon className="w-4 h-4" />
-                                </button>
-                              )}
-                              {currentUser?.role !== "SALES_REP" &&
+                              {account.lifecycle !== "DEACTIVATED" &&
+                                !["TSE", "KAM"].includes(currentUser?.role) && (
+                                  <button
+                                    onClick={() =>
+                                      navigate(`/accounts/${account.id}/edit`)
+                                    }
+                                    className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                                    title="Edit"
+                                  >
+                                    <PencilSquareIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                              {["SUPER_ADMIN", "TSL"].includes(
+                                currentUser?.role,
+                              ) &&
                                 account.lifecycle !== "DEACTIVATED" && (
                                   <button
                                     onClick={() =>
@@ -703,7 +750,9 @@ const AccountList = () => {
                                   </button>
                                 )}
                               {account.lifecycle === "DEACTIVATED" &&
-                                currentUser?.role !== "SALES_REP" && (
+                                ["SUPER_ADMIN", "TSL"].includes(
+                                  currentUser?.role,
+                                ) && (
                                   <button
                                     onClick={() =>
                                       setRestoreModal({
@@ -730,7 +779,6 @@ const AccountList = () => {
               {/* Mobile/Tablet Card View */}
               <div className="lg:hidden divide-y divide-slate-100">
                 {accounts.map((account) => {
-
                   return (
                     <div
                       key={account.id}
@@ -752,11 +800,11 @@ const AccountList = () => {
                             >
                               {account.accountName}
                             </Link>
-                            {account.accountNumber && (
+                            {/* {account.accountNumber && (
                               <p className="text-xs text-slate-400 mt-0.5">
                                 #{account.accountNumber}
                               </p>
-                            )}
+                            )} */}
                           </div>
                         </div>
                       </div>
@@ -805,17 +853,18 @@ const AccountList = () => {
                           >
                             <EyeIcon className="w-4 h-4" />
                           </button>
-                          {account.lifecycle !== "DEACTIVATED" && (
-                            <button
-                              onClick={() =>
-                                navigate(`/accounts/${account.id}/edit`)
-                              }
-                              className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                            >
-                              <PencilSquareIcon className="w-4 h-4" />
-                            </button>
-                          )}
-                          {currentUser?.role !== "SALES_REP" &&
+                          {account.lifecycle !== "DEACTIVATED" &&
+                            !["TSE", "KAM"].includes(currentUser?.role) && (
+                              <button
+                                onClick={() =>
+                                  navigate(`/accounts/${account.id}/edit`)
+                                }
+                                className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                              >
+                                <PencilSquareIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                          {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) &&
                             account.lifecycle !== "DEACTIVATED" && (
                               <button
                                 onClick={() =>
@@ -831,7 +880,9 @@ const AccountList = () => {
                               </button>
                             )}
                           {account.lifecycle === "DEACTIVATED" &&
-                            currentUser?.role !== "SALES_REP" && (
+                            ["SUPER_ADMIN", "TSL"].includes(
+                              currentUser?.role,
+                            ) && (
                               <button
                                 onClick={() =>
                                   setRestoreModal({

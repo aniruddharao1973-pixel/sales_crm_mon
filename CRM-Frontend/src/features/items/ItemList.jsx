@@ -33,7 +33,7 @@ function SkuBadge({ sku }) {
   if (!sku) return <span className="text-slate-300 text-xs">—</span>;
 
   return (
-    <span className="text-[11px] font-mono font-extrabold tracking-wide text-slate-950 whitespace-nowrap">
+    <span className="text-[13px] font-medium text-slate-700 whitespace-nowrap">
       {sku}
     </span>
   );
@@ -44,7 +44,7 @@ function CategoryBadge({ category }) {
 
   return (
     <span
-      className="text-[11px] font-medium text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+      className="text-[13px] font-medium text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
       style={{ maxWidth: 140 }}
     >
       {category}
@@ -56,7 +56,7 @@ function UomBadge({ uom }) {
   if (!uom) return <span className="text-slate-300 text-xs">—</span>;
 
   return (
-    <span className="text-[11px] font-medium text-slate-700 whitespace-nowrap">
+    <span className="text-[13px] font-medium text-slate-700 whitespace-nowrap">
       {uom}
     </span>
   );
@@ -64,8 +64,9 @@ function UomBadge({ uom }) {
 
 function MfgCode({ code }) {
   if (!code) return <span className="text-slate-300 text-xs">—</span>;
+
   return (
-    <code className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
+    <code className="text-[13px] font-medium text-slate-700 whitespace-nowrap">
       {code}
     </code>
   );
@@ -319,17 +320,17 @@ export default function ItemList() {
             }`}
           >
             {/* SKU */}
-            <td className="px-4 py-3 whitespace-nowrap">
+            <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <SkuBadge sku={item.sku} />
             </td>
 
             {/* CATEGORY */}
-            <td className="px-4 py-3 whitespace-nowrap">
+            <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <CategoryBadge category={item.category} />
             </td>
 
             {/* ITEM DETAILS */}
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r border-slate-100 last:border-r-0">
               <div
                 className="flex items-start gap-2"
                 style={{ paddingLeft: `${level * 20}px` }}
@@ -351,48 +352,89 @@ export default function ItemList() {
                 )}
 
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-slate-800 leading-snug">
-                    {item.name}
-                  </p>
+                  {level > 0 ? (
+                    <div
+                      className="whitespace-pre-wrap break-words text-[13px] leading-5 text-slate-600 font-normal max-w-full overflow-hidden"
+                      style={{
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {item.description || item.name}
+                    </div>
+                  ) : [
+                      "Application Engineering",
+                      "Application Software",
+                    ].includes(item.category) ? (
+                    <div className="whitespace-pre-wrap break-words text-[13px] leading-5 text-slate-600 font-normal max-w-full overflow-hidden">
+                      {item.description || item.name}
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[13px] font-medium text-slate-600 leading-snug">
+                        {item.name}
+                      </p>
 
-                  {item.description && item.description !== item.name && (
-                    <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-5 text-slate-800 font-normal max-w-full overflow-hidden">
-                      {item.description}
-                    </pre>
+                      {item.description &&
+                        item.description !== item.name &&
+                        !(
+                          level === 0 &&
+                          [
+                            "Assembly Platform",
+                            "Test Platform",
+                            "Fixture & Adapter",
+                          ].includes(item.category)
+                        ) && (
+                          <div className="mt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[13px] leading-5 text-slate-600 font-normal max-w-full overflow-hidden">
+                            {item.description}
+                          </div>
+                        )}
+                    </>
                   )}
                 </div>
               </div>
             </td>
 
             {/* MAKE */}
-            <td className="px-4 py-3 whitespace-nowrap">
+            <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <span className="text-[13px] text-slate-600">
                 {item.make || <span className="text-slate-300">—</span>}
               </span>
             </td>
 
             {/* MFG PART NO */}
-            <td className="px-4 py-3 whitespace-nowrap">
+            <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <MfgCode code={item.mfgPartNo} />
             </td>
 
             {/* QTY */}
-            <td className="px-4 py-3 text-center whitespace-nowrap">
-              <span className="text-[12px] font-semibold text-slate-700">
-                {Number(item.quantity || 1).toLocaleString("en-IN")}
-              </span>
+            <td className="px-4 py-3 text-center whitespace-nowrap border-r border-slate-100 last:border-r-0">
+              {level > 0 &&
+              ["Test Platform", "Assembly Platform"].includes(item.category) ? (
+                <span className="text-slate-300">—</span>
+              ) : (
+                <span className="text-[13px] font-medium text-slate-700">
+                  {Number(item.quantity || 1).toLocaleString("en-IN")}
+                </span>
+              )}
             </td>
 
             {/* UOM */}
-            <td className="px-4 py-3 text-center whitespace-nowrap">
+            <td className="px-4 py-3 text-center whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <UomBadge uom={item.uom} />
             </td>
 
             {/* BASE PRICE */}
-            <td className="px-4 py-3 text-right whitespace-nowrap">
-              <span className="text-[13px] font-medium text-slate-800">
-                {formatAmount(item.basePrice || 0)}
-              </span>
+            {/* BASE PRICE */}
+            <td className="px-4 py-3 text-center whitespace-nowrap border-r border-slate-100 last:border-r-0">
+              {level > 0 &&
+              ["Test Platform", "Assembly Platform"].includes(item.category) ? (
+                <span className="text-slate-300">—</span>
+              ) : (
+                <span className="text-[13px] font-medium text-slate-700">
+                  {formatAmount(item.basePrice || 0)}
+                </span>
+              )}
             </td>
 
             {/* TOTAL PRICE */}
@@ -403,7 +445,7 @@ export default function ItemList() {
             </td> */}
 
             {/* TOTAL PRICE */}
-            <td className="px-4 py-3 text-right whitespace-nowrap">
+            <td className="px-4 py-3 text-right whitespace-nowrap border-r border-slate-100 last:border-r-0">
               {level === 0 ? (
                 <span className="text-[13px] font-bold text-slate-900">
                   {formatAmount(total)}
@@ -420,7 +462,7 @@ export default function ItemList() {
             </td>
 
             {/* ACTIONS */}
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 border-r border-slate-100 last:border-r-0">
               <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                 <button
                   onClick={() => navigate(`/items/${item.id}`)}
@@ -617,20 +659,20 @@ export default function ItemList() {
               <thead className="sticky top-0 z-20">
                 <tr className="bg-slate-50 border-b border-slate-100">
                   {[
-                    { label: "SKU", w: "9%", align: "left" },
-                    { label: "Category", w: "13%", align: "left" },
-                    { label: "Item details", w: "28%", align: "left" },
-                    { label: "Make", w: "10%", align: "left" },
-                    { label: "Mfg part no", w: "11%", align: "left" },
-                    { label: "Qty", w: "6%", align: "center" },
-                    { label: "UOM", w: "6%", align: "center" },
-                    { label: "Base price", w: "9%", align: "right" },
+                    { label: "SKU", w: "8%", align: "left" },
+                    { label: "Category", w: "15%", align: "left" },
+                    { label: "Item description", w: "36%", align: "left" },
+                    { label: "Make", w: "7%", align: "left" },
+                    { label: "Mfg part no", w: "7%", align: "left" },
+                    { label: "Qty", w: "3%", align: "center" },
+                    { label: "UOM", w: "3%", align: "center" },
+                    { label: "Base price", w: "7%", align: "right" },
                     { label: "Total price", w: "9%", align: "right" },
-                    { label: "Actions", w: "8%", align: "center" },
+                    { label: "Actions", w: "3%", align: "center" },
                   ].map((col) => (
                     <th
                       key={col.label}
-                      className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 whitespace-nowrap border-b border-slate-100"
+                      className="px-2.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 whitespace-nowrap border-b border-r border-slate-100 last:border-r-0"
                       style={{ width: col.w, textAlign: col.align }}
                     >
                       {col.label}

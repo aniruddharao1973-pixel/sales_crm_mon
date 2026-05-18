@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     fontSize: 8.2,
     fontWeight: "bold",
     color: "#FFFFFF",
-    borderRightWidth: 1,
+    borderRightWidth: 0,
     borderRightColor: "rgba(255,255,255,0.18)",
   },
   tableCell: {
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     width: 18,
     fontSize: 8.5,
     fontWeight: "bold",
-    color: "#1D4ED8",
+    color: "#475569",
   },
   cancellationListText: {
     flex: 1,
@@ -679,8 +679,13 @@ const bankTableRows = [
   {
     no: "2",
     label: "Micrologic Payment Cheque / DD / Pay Order",
-    value:
-      "In favor of Micrologic Integrated Systems Pvt. Ltd.\nPayable at Bangalore only",
+    value: "",
+  },
+  {
+    no: "",
+    label: "➢  In favor of Micrologic Integrated Systems Pvt. Ltd.\n➢  Payable at Bangalore only",
+    value: "",
+    isUnderlined: true,
   },
 
   { no: "3", label: "Micrologic Registration Numbers", value: "" },
@@ -1129,7 +1134,7 @@ function PricingTable({ columns, data }) {
                   <View
                     key={col.key}
                     style={{
-                      width: isLabelCell ? "78%" : col.width,
+                      width: isLabelCell ? "90%" : col.width,
 
                       display: isLabelCell || isTotalCell ? "flex" : "none",
 
@@ -1369,7 +1374,7 @@ function BudgetaryPricingTable({ columns, data, totals, proposalType }) {
           </View>
           <View
             style={{
-              width: "15%",
+              width: "13%",
               paddingVertical: 6,
               paddingHorizontal: 8,
               alignItems: "flex-end",
@@ -1403,12 +1408,12 @@ function BudgetaryPricingTable({ columns, data, totals, proposalType }) {
                 <Text
                   style={{ fontSize: 9, fontWeight: "bold", color: "#2563EB" }}
                 >
-                  Discount(-)
+                  Disc.(-)
                 </Text>
               </View>
               <View
                 style={{
-                  width: "15%",
+                  width: "13%",
                   paddingVertical: 6,
                   paddingHorizontal: 8,
                   alignItems: "flex-end",
@@ -1443,7 +1448,7 @@ function BudgetaryPricingTable({ columns, data, totals, proposalType }) {
               </View>
               <View
                 style={{
-                  width: "15%",
+                  width: "13%",
                   paddingVertical: 8,
                   paddingHorizontal: 8,
                   alignItems: "flex-end",
@@ -1459,12 +1464,6 @@ function BudgetaryPricingTable({ columns, data, totals, proposalType }) {
           )}
       </View>
 
-      {/* Price Basis Note */}
-      <View style={{ marginTop: 8, paddingHorizontal: 4 }}>
-        <Text style={{ fontSize: 9, color: "#1E3A8A", fontWeight: "bold" }}>
-          Price Basis: Above price is basic, exclusive of GST@18% Extra
-        </Text>
-      </View>
     </View>
   );
 }
@@ -1795,6 +1794,23 @@ const cleanPdfText = (value) => {
 
       .trim()
   );
+};
+
+const formatPhone = (value) => {
+  if (!value || value === "-") return "-";
+  let cleaned = String(value).replace(/\D/g, "");
+
+  // Handle Indian mobile numbers with 91 prefix
+  if (cleaned.length === 12 && cleaned.startsWith("91")) {
+    cleaned = cleaned.substring(2);
+  }
+
+  // Format 10-digit numbers as +91 XXXXX XXXXX
+  if (cleaned.length === 10) {
+    return `+91 ${cleaned.substring(0, 5)} ${cleaned.substring(5)}`;
+  }
+
+  return String(value);
 };
 
 const cleanNumber = (value) => {
@@ -2293,10 +2309,14 @@ export function ProposalPDF({
   const approvedByApproval = (quotation?.approvals || []).find(
     (a) => a.action === "APPROVED",
   );
+  const authorizedByApproval = (quotation?.approvals || []).find(
+    (a) => a.action === "AUTHORIZED",
+  );
 
   const docOwner = docOwnerApproval?.actedBy?.name || "-";
   // kamName is already defined above
   const approvedBy = approvedByApproval?.actedBy?.name || "-";
+  const authorizedBy = authorizedByApproval?.actedBy?.name || "-";
 
   const fullAddress = [
     quotation?.account?.billingStreet,
@@ -2330,7 +2350,12 @@ export function ProposalPDF({
 
     {
       label: "Phone No.",
-      value: quotation?.account?.phone || contact?.phone || "-",
+      value: formatPhone(
+        quotation?.account?.phone ||
+          contact?.mobile ||
+          contact?.phone ||
+          "-",
+      ),
     },
 
     {
@@ -2345,6 +2370,7 @@ export function ProposalPDF({
     { label: "Tech Prop Ref", value: quotation?.techPropRef || "-" },
     { label: "Doc Owner", value: docOwner },
     { label: "Approved By", value: approvedBy },
+    { label: "Authorized By", value: authorizedBy },
   ];
   const pricingColumns = [
     {
@@ -2370,7 +2396,7 @@ export function ProposalPDF({
     {
       key: "mfgPartNo",
       title: "Mfg PN",
-      width: "15%",
+      width: "14%",
       align: "center",
       verticalAlign: "center",
     },
@@ -2397,7 +2423,7 @@ export function ProposalPDF({
     },
     {
       key: "discount",
-      title: "Discount",
+      title: "Disc.",
       width: "6%",
       align: "right",
       verticalAlign: "center",
@@ -2668,13 +2694,15 @@ export function ProposalPDF({
                         fontSize: 8.5,
                         color:
                           item.label === "Doc Owner" ||
-                          item.label === "Approved By"
+                          item.label === "Approved By" ||
+                          item.label === "Authorized By"
                             ? "#2563EB"
                             : "#374151",
                         lineHeight: 1.4,
                         fontWeight:
                           item.label === "Doc Owner" ||
-                          item.label === "Approved By"
+                          item.label === "Approved By" ||
+                          item.label === "Authorized By"
                             ? "bold"
                             : "normal",
                       }}
@@ -2766,7 +2794,7 @@ export function ProposalPDF({
               <Text
                 style={{ fontSize: 8, color: "#2563EB", fontWeight: "bold" }}
               >
-                M: {company.phone}
+                M: {formatPhone(company.phone)}
               </Text>
             </View>
           </View>
@@ -2840,7 +2868,7 @@ export function ProposalPDF({
                       color: "#475569",
                     }}
                   >
-                    {contact.phone}
+                    {formatPhone(contact.phone)}
                   </Text>
                 </View>
               ))}
@@ -3202,20 +3230,17 @@ export function ProposalPDF({
             proposalType={proposalType}
           />
         ) : (
-          <>
-            <PricingTable 
-              columns={pricingColumns} 
-              data={[...pricingData, grandTotalGroup]} 
-            />
-            <View style={{ marginTop: 8, paddingHorizontal: 4 }}>
-              <Text
-                style={{ fontSize: 9, color: "#1E3A8A", fontWeight: "bold" }}
-              >
-                Price Basis: Above price is basic, exclusive of GST@18% Extra
-              </Text>
-            </View>
-          </>
+          <PricingTable
+            columns={pricingColumns}
+            data={[...pricingData, grandTotalGroup]}
+          />
         )}
+
+        <View style={{ marginTop: 8, paddingHorizontal: 4 }}>
+          <Text style={{ fontSize: 9, color: "#1E3A8A", fontWeight: "bold" }}>
+            Price Basis: Above price is basic, exclusive of GST@18% Extra
+          </Text>
+        </View>
 
 
 
@@ -3240,17 +3265,7 @@ export function ProposalPDF({
 
         {deliveryTerms.length > 0 && (
           <SectionCard title="Price Basis & Delivery" soft>
-            <View style={{ marginBottom: 8 }}>
-              <Text
-                style={{
-                  fontSize: 8.5,
-                  fontWeight: "bold",
-                  color: "#374151",
-                }}
-              >
-                Ex-Works Micrologic, Freight, Insurance Extra
-              </Text>
-            </View>
+
 
             <TableBlock
               columns={[
@@ -3430,7 +3445,7 @@ export function ProposalPDF({
 
         <NumberedTermsTable
           title="COMMERCIAL TERMS"
-          rows={commercialTermsRows}
+          rows={[...commercialTermsRows, delayedDeliveryRow]}
         />
 
         <PdfFooter />
@@ -3441,11 +3456,6 @@ export function ProposalPDF({
           refNo={metadata.ref}
           revNo={metadata.rev}
           date={metadata.date}
-        />
-
-        <NumberedTermsTable
-          title="COMMERCIAL TERMS"
-          rows={[delayedDeliveryRow]}
         />
 
         {/* ORDER CANCELLATION */}
@@ -3467,7 +3477,17 @@ export function ProposalPDF({
               <View key={item.no} style={styles.cancellationListRow}>
                 <Text style={styles.cancellationListNo}>{item.no}.</Text>
 
-                <Text style={styles.cancellationListText}>{item.text}</Text>
+                <Text style={styles.cancellationListText}>
+                  {item.text.split("\n")[0]}
+                  {item.text.includes("\n") && (
+                    <>
+                      {"\n"}
+                      <Text style={{ color: "#1D4ED8", fontWeight: "bold" }}>
+                        {item.text.split("\n")[1]}
+                      </Text>
+                    </>
+                  )}
+                </Text>
               </View>
             ))}
 
@@ -3564,7 +3584,7 @@ export function ProposalPDF({
           </View>
 
           {bankTableRows.map((row, index) => {
-            const isSection = row.no === "1" || row.no === "3";
+            const isSection = row.no === "1" || row.no === "2" || row.no === "3";
 
             return (
               <View
@@ -3591,32 +3611,107 @@ export function ProposalPDF({
                   {row.no}
                 </Text>
 
-                <Text
+                <View
                   style={[
                     styles.tableCell,
                     {
-                      width: "35%",
+                      width: row.no === "" ? "85%" : "35%",
                       fontWeight: isSection ? "bold" : "medium",
                       color: isSection ? "#1E3A8A" : "#334155",
+                      paddingLeft: row.no === "" ? 12 : 4,
+                      borderRightWidth: row.no === "" ? 0 : 1,
                     },
                   ]}
                 >
-                  {row.label}
-                </Text>
+                  {/* LABEL RENDERING */}
+                  {typeof row.label === "string" && row.label.includes("\n") ? (
+                    row.label.split("\n").map((line, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "flex-start",
+                          marginBottom: i === row.label.split("\n").length - 1 ? 0 : 4,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 4,
+                            height: 4,
+                            backgroundColor: "#2563EB",
+                            borderRadius: 1,
+                            marginTop: 4,
+                            marginRight: 6,
+                          }}
+                        />
+                        <Text
+                          style={{
+                            textDecoration: row.isUnderlined ? "underline" : "none",
+                            fontSize: 8.2,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {line.replace(/^➢\s*/, "")}
+                        </Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={{ textDecoration: row.isUnderlined ? "underline" : "none" }}>
+                      {row.label}
+                    </Text>
+                  )}
+                </View>
 
-                <Text
-                  style={[
-                    styles.tableCell,
-                    {
-                      width: "50%",
-                      color: isSection ? "#1E3A8A" : "#0F172A",
-                      fontWeight: isSection ? "bold" : "medium",
-                      lineHeight: 1.5,
-                    },
-                  ]}
-                >
-                  {row.value}
-                </Text>
+                {row.no !== "" && (
+                  <View
+                    style={[
+                      styles.tableCell,
+                      {
+                        width: "50%",
+                        color: isSection ? "#1E3A8A" : "#0F172A",
+                        fontWeight: isSection ? "bold" : "medium",
+                        lineHeight: 1.5,
+                        paddingVertical: 4,
+                        borderRightWidth: 0,
+                      },
+                    ]}
+                  >
+                    {/* VALUE RENDERING */}
+                    {typeof row.value === "string" && row.value.includes("\n") ? (
+                      row.value.split("\n").map((line, i) => (
+                        <View
+                          key={i}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            marginBottom: 2,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              marginRight: 4,
+                              fontSize: 8,
+                              color: isSection ? "#1E3A8A" : "#2563EB",
+                            }}
+                          >
+                            ➢
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 8.2,
+                              textDecoration: "underline",
+                              color: isSection ? "#1E3A8A" : "#0F172A",
+                            }}
+                          >
+                            {line}
+                          </Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text>{row.value}</Text>
+                    )}
+                  </View>
+                )}
               </View>
             );
           })}

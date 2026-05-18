@@ -21,6 +21,10 @@ export const getAccounts = asyncHandler(async (req, res) => {
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
+  if (user.role === "TSE" && parseInt(limit) > 100) {
+    throw new ApiError(403, "Forbidden: Export not allowed for your role");
+  }
+
   const where = {
     ...(search && {
       OR: [
@@ -35,7 +39,8 @@ export const getAccounts = asyncHandler(async (req, res) => {
     ...(lifecycle ? { lifecycle } : { lifecycle: { not: "DEACTIVATED" } }),
 
     // 🔥 Assignment-based access
-    ...(user.role !== "ADMIN" && {
+    // 🔥 Role-based access
+    ...(["KAM", "TSE"].includes(user.role) && {
       OR: [
         { accountOwnerId: user.id },
         { keyAccountManagerId: user.id },
@@ -104,7 +109,7 @@ export const getAccount = asyncHandler(async (req, res) => {
     where: {
       id: req.params.id,
 
-      ...(user.role !== "ADMIN" && {
+      ...(["KAM", "TSE"].includes(user.role) && {
         OR: [
           { accountOwnerId: user.id },
           { keyAccountManagerId: user.id },
@@ -120,6 +125,24 @@ export const getAccount = asyncHandler(async (req, res) => {
       parentAccount: { select: { id: true, accountName: true } },
       childAccounts: { select: { id: true, accountName: true } },
       contacts: {
+        where: {
+          ...(user.role === "TSE" && {
+            OR: [
+              { contactOwnerId: user.id },
+              { assignments: { some: { userId: user.id } } },
+              {
+                deals: {
+                  some: {
+                    OR: [
+                      { personInCharge: { equals: user.name, mode: "insensitive" } },
+                      { assignments: { some: { userId: user.id } } },
+                    ],
+                  },
+                },
+              },
+            ],
+          }),
+        },
         select: {
           id: true,
           firstName: true,
@@ -131,6 +154,14 @@ export const getAccount = asyncHandler(async (req, res) => {
         orderBy: { createdAt: "desc" },
       },
       deals: {
+        where: {
+          ...(user.role === "TSE" && {
+            OR: [
+              { personInCharge: { equals: user.name, mode: "insensitive" } },
+              { assignments: { some: { userId: user.id } } },
+            ],
+          }),
+        },
         select: {
           id: true,
           dealName: true,
@@ -202,27 +233,16 @@ export const updateAccount = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Account not found");
   }
 
-  // 🛡️ Ownership protection
+  // 🛡️ Role-based protection
+  if (["KAM", "TSE"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Your role does not have permission to update accounts");
+  }
+
   if (
-    req.user.role !== "ADMIN" &&
+    !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role) &&
     existing.accountOwnerId !== req.user.id
   ) {
-    // Check if user is KAM, assigned, or PIC of a deal
-    const authorized = await prisma.account.findFirst({
-      where: {
-        id: req.params.id,
-        OR: [
-          { keyAccountManagerId: req.user.id },
-          { assignments: { some: { userId: req.user.id } } },
-          { deals: { some: { personInCharge: { equals: req.user.name, mode: "insensitive" } } } },
-          { deals: { some: { assignments: { some: { userId: req.user.id } } } } },
-        ],
-      },
-    });
-
-    if (!authorized) {
-      throw new ApiError(403, "Forbidden: You do not have permission to update this account");
-    }
+    throw new ApiError(403, "Forbidden: You do not have permission to update this account");
   }
 
   const data = {
@@ -259,8 +279,8 @@ export const updateAccount = asyncHandler(async (req, res) => {
 // @desc    Delete account
 // @route   DELETE /api/accounts/:id
 export const deleteAccount = asyncHandler(async (req, res) => {
-  if (req.user.role === "SALES_REP") {
-    throw new ApiError(403, "Forbidden: Sales Reps cannot delete records");
+  if (["KAM", "TSE"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Your role does not have permission to delete accounts");
   }
 
   const existing = await prisma.account.findUnique({
@@ -291,7 +311,7 @@ export const getAccountsDropdown = asyncHandler(async (req, res) => {
   const where = {
     lifecycle: { not: "DEACTIVATED" },
 
-    ...(user.role !== "ADMIN" && {
+    ...(!["SUPER_ADMIN", "TSL", "MANAGER"].includes(user.role) && {
       OR: [
         { accountOwnerId: user.id },
         { keyAccountManagerId: user.id },
@@ -311,26 +331,29 @@ export const getAccountsDropdown = asyncHandler(async (req, res) => {
   res.json({ success: true, data: accounts });
 });
 
-// @desc    Import accounts from Excel
-// @route   POST /api/accounts/import
 export const importAccounts = asyncHandler(async (req, res) => {
+  if (!["SUPER_ADMIN", "TSL"].includes(req.user.role)) {
+    throw new ApiError(403, "Forbidden: Only Super Admin and TSL can import records");
+  }
+
   if (!req.file) {
     throw new ApiError(400, "Please upload an Excel file");
   }
 
-  // Find ADMIN user dynamically
-  const adminUser = await prisma.user.findFirst({
-    where: { role: "ADMIN" },
+  // Pre-load users for mapping owner names
+  const allUsers = await prisma.user.findMany({
+    select: { id: true, name: true, username: true },
   });
 
-  if (!adminUser) {
-    throw new ApiError(
-      500,
-      "No ADMIN user found in the system to assign accounts.",
-    );
-  }
+  const userMap = {};
+  allUsers.forEach((u) => {
+    if (u.name)
+      userMap[u.name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()] = u.id;
+    if (u.username)
+      userMap[u.username.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()] = u.id;
+  });
 
-  const ADMIN_USER_ID = adminUser.id;
+  const DEFAULT_OWNER_ID = req.user.id;
 
   // Parse Excel buffer
   const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
@@ -425,6 +448,17 @@ export const importAccounts = asyncHandler(async (req, res) => {
       billingCountry: rowData["billingcountry"] || null,
     };
 
+    // Resolve owner → fallback to logined user
+    const rawOwner = rowData["accountowner"];
+    let accountOwnerId = DEFAULT_OWNER_ID;
+    if (rawOwner) {
+      const cleanOwner = String(rawOwner)
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toLowerCase();
+      accountOwnerId = userMap[cleanOwner] || DEFAULT_OWNER_ID;
+    }
+    payload.accountOwnerId = accountOwnerId;
+
     // Remove empty nulls to prevent erasing existing data
     Object.keys(payload).forEach((k) => {
       if (payload[k] === null || payload[k] === "") {
@@ -447,7 +481,7 @@ export const importAccounts = asyncHandler(async (req, res) => {
           stats.updated++;
         } else {
           await prisma.account.create({
-            data: { ...payload, accountOwnerId: ADMIN_USER_ID },
+            data: payload,
           });
           stats.created++;
         }
@@ -465,7 +499,7 @@ export const importAccounts = asyncHandler(async (req, res) => {
           stats.updated++;
         } else {
           await prisma.account.create({
-            data: { ...payload, accountOwnerId: ADMIN_USER_ID },
+            data: payload,
           });
           stats.created++;
         }

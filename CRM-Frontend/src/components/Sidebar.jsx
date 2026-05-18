@@ -479,13 +479,16 @@ function BrandSection({ isCollapsed }) {
         isCollapsed ? "justify-center" : "gap-3"
       } px-4 py-6 transition-all duration-300`}
     >
+      <div className="flex-shrink-0 w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-lg">
+        <span className="text-xl font-bold text-white">M</span>
+      </div>
       <div
         className={`overflow-hidden transition-all duration-300 ${
           isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
         }`}
       >
-        <h1 className="font-semibold text-lg whitespace-nowrap">
-          FactEyes CRM
+        <h1 className="font-bold text-lg whitespace-nowrap tracking-tight">
+          Micrologic Edge
         </h1>
       </div>
     </div>
@@ -590,7 +593,7 @@ function SidebarContent({
               {!collapsed && (
                 <span className="text-[11px] leading-snug text-white/60 group-hover:text-white/90 transition">
                   Passionately engineered by{" "}
-                  <span className="font-semibold text-white">FactEyes</span>
+                  <span className="font-semibold text-white">Micrologic Edge</span>
                 </span>
               )}
             </div>
@@ -627,7 +630,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
     { name: "Items", to: "/items", icon: Package },
     { name: "Calendar", to: "/calendar", icon: CalendarDays },
 
-    ...(user?.role === "ADMIN"
+    ...(["SUPER_ADMIN", "TSL"].includes(user?.role)
       ? [
           { name: "Users", to: "/users", icon: Users },
           {

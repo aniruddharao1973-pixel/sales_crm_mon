@@ -613,9 +613,9 @@ const Input = ({
 // Role options with descriptions
 const ROLE_OPTIONS = [
   {
-    value: "SALES_REP",
-    label: "Sales Rep",
-    description: "Can manage their own deals, contacts, and tasks",
+    value: "TSE",
+    label: "Tech Sales Employee (TSE)",
+    description: "Confined access to assigned deals. Can create and release quotations.",
     icon: BriefcaseIcon,
     gradient: "from-sky-500 to-sky-600",
     bgLight: "bg-sky-50",
@@ -623,9 +623,19 @@ const ROLE_OPTIONS = [
     ringActive: "ring-sky-200",
   },
   {
+    value: "KAM",
+    label: "Key Account Manager (KAM)",
+    description: "Access to assigned accounts. View-only access, can approve releases.",
+    icon: UserIcon,
+    gradient: "from-amber-500 to-amber-600",
+    bgLight: "bg-amber-50",
+    borderActive: "border-amber-500",
+    ringActive: "ring-amber-200",
+  },
+  {
     value: "MANAGER",
     label: "Manager",
-    description: "Can view and manage team's data and reports",
+    description: "Global oversight of all accounts, deals, and quotations. No import access.",
     icon: UserGroupIcon,
     gradient: "from-violet-500 to-violet-600",
     bgLight: "bg-violet-50",
@@ -633,9 +643,19 @@ const ROLE_OPTIONS = [
     ringActive: "ring-violet-200",
   },
   {
-    value: "ADMIN",
-    label: "Admin",
-    description: "Full access to all features, users, and settings",
+    value: "TSL",
+    label: "Tech Sales Lead (TSL)",
+    description: "Full system access and import functionality. Cannot remove Super Admin.",
+    icon: SparklesIcon,
+    gradient: "from-emerald-500 to-emerald-600",
+    bgLight: "bg-emerald-50",
+    borderActive: "border-emerald-500",
+    ringActive: "ring-emerald-200",
+  },
+  {
+    value: "SUPER_ADMIN",
+    label: "Super Admin",
+    description: "Absolute system control and root management permissions.",
     icon: ShieldCheckIcon,
     gradient: "from-[#3B2E7E] to-[#2A1F5C]",
     bgLight: "bg-[#3B2E7E]/5",
@@ -752,7 +772,7 @@ export default function CreateUser() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "SALES_REP",
+    role: "TSE",
     maxDiscount: 0,
     mobile: "",
   });
@@ -834,6 +854,7 @@ export default function CreateUser() {
         password: form.password,
         role: form.role,
         maxDiscount: form.maxDiscount,
+        mobile: form.mobile.trim(),
       };
 
       const res = await dispatch(registerUser(payload));
@@ -1077,12 +1098,12 @@ export default function CreateUser() {
                     <SparklesIcon className="w-5 h-5" />
                   </div>
                   <input
-                    type={form.role === "ADMIN" ? "text" : "number"}
+                    type={["SUPER_ADMIN", "TSL"].includes(form.role) ? "text" : "number"}
                     name="maxDiscount"
-                    value={form.role === "ADMIN" ? "" : form.maxDiscount}
+                    value={["SUPER_ADMIN", "TSL"].includes(form.role) ? "" : form.maxDiscount}
                     onChange={handleChange}
-                    placeholder={form.role === "ADMIN" ? "Unlimited (Admin)" : "e.g. 10"}
-                    disabled={form.role === "ADMIN"}
+                    placeholder={["SUPER_ADMIN", "TSL"].includes(form.role) ? "Unlimited (Admin/TSL)" : "e.g. 10"}
+                    disabled={["SUPER_ADMIN", "TSL"].includes(form.role)}
                     min="0"
                     max="100"
                     step="0.1"
@@ -1091,12 +1112,12 @@ export default function CreateUser() {
                       placeholder:text-slate-400 placeholder:font-normal text-slate-800
                       focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500
                       transition-all duration-200
-                      ${form.role === "ADMIN" ? "bg-slate-50 border-slate-200 cursor-not-allowed" : "bg-white"}
+                      ${["SUPER_ADMIN", "TSL"].includes(form.role) ? "bg-slate-50 border-slate-200 cursor-not-allowed" : "bg-white"}
                       ${errors.maxDiscount ? "border-rose-300 focus:ring-rose-100 focus:border-rose-500" : "border-slate-200 hover:border-amber-500/30"}
                     `}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                    {form.role === "ADMIN" ? "EXEMPT" : "PERCENT (%)"}
+                    {["SUPER_ADMIN", "TSL"].includes(form.role) ? "EXEMPT" : "PERCENT (%)"}
                   </div>
                 </div>
               </FormField>

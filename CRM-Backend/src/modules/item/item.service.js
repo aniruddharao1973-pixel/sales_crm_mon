@@ -624,17 +624,24 @@ export const importItemsService = async ({ file, category }) => {
         const isApplicationEngineering =
           normalizedCategory === "APPLICATION ENGINEERING";
 
+        const isApplicationEngineeringHeader =
+          isApplicationEngineering && !sku && description;
+
         const isParent =
           upperSku.startsWith("TC") || // Test Platform parent
           upperSku.startsWith("FX") || // Fixture & Adapter parent
           upperSku.startsWith("AC") || // Assembly Platform SKU parent
           isAssemblyPlatform || // Assembly Platform section rows
-          isApplicationEngineering; // Application Engineering section rows
+          isApplicationEngineeringHeader; // Application Engineering section rows
 
         const isChild =
           upperSku.startsWith("FC") || // Test Platform child
           upperSku.startsWith("INT") || // Test Platform multiline/spec child
-          categoryCell.toUpperCase() === "ACCESSORY"; // Fixture child
+          categoryCell.toUpperCase() === "ACCESSORY" || // Old Fixture child
+          (canonicalCategory === "Fixture & Adapter" &&
+            !sku &&
+            !!description) ||
+          isApplicationEngineering;
 
         // =========================
         // 1. PARENT ROW

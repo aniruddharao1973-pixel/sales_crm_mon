@@ -1,15 +1,17 @@
-// src\components\Header.jsx
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import { logoutUser } from "../features/auth/authSlice";
 import Avatar from "./Avatar";
+import ChangePasswordModal from "../features/auth/ChangePasswordModal";
 import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
-const Header = ({ onMenuToggle }) => {
+const Header = ({ onMenuToggle, onPasswordClick }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
@@ -52,15 +54,27 @@ const Header = ({ onMenuToggle }) => {
           {/* Divider */}
           <div className="w-px h-8 bg-gray-200 hidden sm:block" />
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-lg hover:bg-red-50 text-gray-400
-              hover:text-red-600 transition-colors"
-            title="Logout"
-          >
-            <ArrowRightOnRectangleIcon className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Change Password */}
+            <button
+              onClick={onPasswordClick}
+              className="p-2 rounded-lg hover:bg-indigo-50 text-gray-400
+                hover:text-indigo-600 transition-colors"
+              title="Security Settings"
+            >
+              <ShieldCheckIcon className="w-5 h-5" />
+            </button>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-lg hover:bg-red-50 text-gray-400
+                hover:text-red-600 transition-colors"
+              title="Logout"
+            >
+              <ArrowRightOnRectangleIcon className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </header>

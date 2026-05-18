@@ -44,7 +44,7 @@ export const toggleAssignmentController = async (req, res) => {
 export const getDealAssignments = async (req, res) => {
   const users = await prisma.user.findMany({
     where: {
-      role: { in: ["MANAGER", "SALES_REP"] },
+      role: { in: ["MANAGER", "KAM", "TSE"] },
       isActive: true,
     },
     select: { id: true, name: true, role: true },
@@ -86,7 +86,7 @@ export const getDealAssignments = async (req, res) => {
 export const getContactAssignments = async (req, res) => {
   const users = await prisma.user.findMany({
     where: {
-      role: { in: ["MANAGER", "SALES_REP"] },
+      role: { in: ["MANAGER", "KAM", "TSE"] },
       isActive: true,
     },
     select: { id: true, name: true, role: true },
@@ -177,7 +177,7 @@ export const getAccountAssignments = async (req, res) => {
 
   // ✅ 2. UI USERS (ONLY Manager + Sales Rep)
   const visibleUsers = allUsers.filter((u) =>
-    ["MANAGER", "SALES_REP"].includes(u.role),
+    ["MANAGER", "KAM", "TSE"].includes(u.role),
   );
 
   const accounts = await prisma.account.findMany({

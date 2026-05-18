@@ -17,7 +17,7 @@ model User {
   mobile   String?
   password String
 
-  role     UserRole @default(SALES_REP)
+  role     UserRole @default(TSE)
 
   avatar   String?
   isActive Boolean  @default(true)
@@ -82,9 +82,11 @@ quotationApprovals QuotationApproval[]
 }
 
 enum UserRole {
-ADMIN
-MANAGER
-SALES_REP
+  SUPER_ADMIN
+  TSL
+  MANAGER
+  KAM
+  TSE
 }
 
 model Account {
@@ -519,14 +521,10 @@ enum QuotationStatus {
   DRAFT
   SUBMITTED   // 🔥 NEW (sales → admin)
   APPROVED
+  AUTHORIZED
   REJECTED
 }
 
-enum QuotationType {
-  BUDGETARY
-  QUOTATION
-  FIRM
-}
 
 model Reminder {
   id          String  @id @default(uuid())
@@ -963,7 +961,6 @@ model Quotation {
   id            String   @id @default(uuid())
 
   quotationNo   String
-  quotationType QuotationType @default(QUOTATION)
 
   version       Int
   isLatest      Boolean  @default(true)

@@ -285,13 +285,15 @@ const ContactList = () => {
           <div className="w-px h-6 bg-slate-200 mx-1" />
 
           {/* New Contact */}
-          <button
-            onClick={() => navigate("/contacts/new")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-xs font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all shadow-md shadow-[#3B2E7E]/20"
-          >
-            <PlusIcon className="w-4 h-4" />
-            New Contact
-          </button>
+          {!["TSE", "KAM"].includes(currentUser?.role) && (
+            <button
+              onClick={() => navigate("/contacts/new")}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-xs font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all shadow-md shadow-[#3B2E7E]/20"
+            >
+              <PlusIcon className="w-4 h-4" />
+              New Contact
+            </button>
+          )}
         </div>
       </div>
 
@@ -331,30 +333,32 @@ const ContactList = () => {
             {/* Right side: Filter & Actions */}
             <div className="flex items-center gap-2 self-end lg:self-auto">
               {/* EXPORT */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportDropdown(!showExportDropdown)}
-                  disabled={!contacts.length}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-bold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-40 shadow-sm"
-                >
-                  <ArrowDownTrayIcon className="w-4 h-4" />
-                  <span className="hidden xl:inline">Export</span>
-                </button>
+              {currentUser?.role !== "TSE" && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExportDropdown(!showExportDropdown)}
+                    disabled={!contacts.length}
+                    className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-bold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-40 shadow-sm"
+                  >
+                    <ArrowDownTrayIcon className="w-4 h-4" />
+                    <span className="hidden xl:inline">Export</span>
+                  </button>
 
-                {showExportDropdown && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowExportDropdown(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
-                      <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100">Full Dataset</div>
-                      <button onClick={exportExcel} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 Export All - Excel</button>
-                      <button onClick={exportCSV} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📄 Export All - CSV</button>
-                    </div>
-                  </>
-                )}
-              </div>
+                  {showExportDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowExportDropdown(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
+                        <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100">Full Dataset</div>
+                        <button onClick={exportExcel} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 Export All - Excel</button>
+                        <button onClick={exportCSV} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📄 Export All - CSV</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* TEMPLATE */}
               <button
@@ -365,7 +369,7 @@ const ContactList = () => {
               </button>
 
               {/* IMPORT */}
-              {(currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER") && (
+              {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) && (
                 <>
                   <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleImport} />
                   <button
@@ -404,7 +408,7 @@ const ContactList = () => {
                 ? "Try adjusting your search"
                 : "Get started by creating your first contact"}
             </p>
-            {!hasFilters && (
+            {!hasFilters && !["TSE", "KAM"].includes(currentUser?.role) && (
               <button
                 onClick={() => navigate("/contacts/new")}
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-900 to-indigo-950 text-white text-sm font-medium rounded-lg hover:from-purple-800 hover:to-indigo-900 transition-colors"
@@ -421,7 +425,7 @@ const ContactList = () => {
               <table className="w-full">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-white border-b border-gray-200">
-                    <th className="px-4 py-4 text-center">
+                    <th className="px-4 py-4 text-left">
                       <input
                         type="checkbox"
                         onChange={(e) => {
@@ -434,29 +438,29 @@ const ContactList = () => {
                       />
                     </th>
 
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Contact
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Phone
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Account
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Owner
                     </th>
 
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Lead Source
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Deals
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -596,7 +600,7 @@ const ContactList = () => {
                         </td>
 
                         {/* Deals Count */}
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-left">
                           <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
                             {contact._count?.deals || 0}
                           </span>
@@ -614,16 +618,18 @@ const ContactList = () => {
                             >
                               <EyeIcon className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() =>
-                                navigate(`/contacts/${contact.id}/edit`)
-                              }
-                              className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
-                              title="Edit Contact"
-                            >
-                              <PencilSquareIcon className="w-4 h-4" />
-                            </button>
-                            {currentUser?.role !== "SALES_REP" && (
+                            {!["TSE", "KAM"].includes(currentUser?.role) && (
+                              <button
+                                onClick={() =>
+                                  navigate(`/contacts/${contact.id}/edit`)
+                                }
+                                className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
+                                title="Edit Contact"
+                              >
+                                <PencilSquareIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) && (
                               <button
                                 onClick={() =>
                                   setDeleteModal({
@@ -738,15 +744,17 @@ const ContactList = () => {
                         >
                           <EyeIcon className="w-5 h-5" />
                         </button>
-                        <button
-                          onClick={() =>
-                            navigate(`/contacts/${contact.id}/edit`)
-                          }
-                          className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                        >
-                          <PencilSquareIcon className="w-5 h-5" />
-                        </button>
-                        {currentUser?.role !== "SALES_REP" && (
+                        {!["TSE", "KAM"].includes(currentUser?.role) && (
+                          <button
+                            onClick={() =>
+                              navigate(`/contacts/${contact.id}/edit`)
+                            }
+                            className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                          >
+                            <PencilSquareIcon className="w-5 h-5" />
+                          </button>
+                        )}
+                        {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) && (
                           <button
                             onClick={() =>
                               setDeleteModal({

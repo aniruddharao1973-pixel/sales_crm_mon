@@ -626,13 +626,13 @@ const SectionCard = ({
 
   return (
     <div className="bg-white rounded-2xl border border-[#3B2E7E]/10 shadow-sm shadow-[#3B2E7E]/5 overflow-hidden">
-      <div className="px-6 py-5 border-b border-[#3B2E7E]/10 bg-gradient-to-r from-[#3B2E7E]/5 to-transparent">
+      <div className="px-6 py-4 border-b border-[#3B2E7E]/10 bg-gradient-to-r from-[#3B2E7E]/5 to-transparent">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
-              className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradients[gradient]} flex items-center justify-center shadow-lg`}
+              className={`w-9 h-9 rounded-xl bg-gradient-to-br ${gradients[gradient]} flex items-center justify-center shadow-lg`}
             >
-              <Icon className="w-5 h-5 text-white" />
+              <Icon className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
@@ -1061,51 +1061,51 @@ const AccountForm = () => {
   /* ═══════════════════ RENDER ═══════════════════ */
 
   return (
-    <div className="w-full mx-auto pb-10">
+    <div className="w-full mx-auto p-4 sm:p-6 pb-10">
       {/* ─── HEADER ─── */}
-      <div className="relative bg-gradient-to-b from-[#3B2E7E] to-[#2A1F5C] rounded-3xl p-8 mb-8 overflow-hidden">
+      <div className="relative bg-gradient-to-b from-[#3B2E7E] to-[#2A1F5C] rounded-3xl p-3 lg:p-4 mb-6 mx-0 lg:mx-8 overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 opacity-15">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-300 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2" />
         </div>
 
         {/* Decorative Circles */}
-        <div className="absolute top-6 right-6 w-20 h-20 border border-white/10 rounded-full" />
-        <div className="absolute top-10 right-10 w-12 h-12 border border-white/10 rounded-full" />
+        <div className="absolute top-4 right-4 w-16 h-16 border border-white/10 rounded-full" />
+        <div className="absolute top-8 right-8 w-10 h-10 border border-white/10 rounded-full" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => navigate("/accounts")}
-              className="w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all border border-white/10"
+              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all border border-white/10"
             >
-              <ArrowLeftIcon className="w-5 h-5 text-white" />
+              <ArrowLeftIcon className="w-4.5 h-4.5 text-white" />
             </button>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
                   isEdit
                     ? "bg-gradient-to-br from-amber-400 to-orange-500"
                     : "bg-white/20 backdrop-blur-sm"
                 }`}
               >
                 {isEdit ? (
-                  <BuildingOffice2Icon className="w-7 h-7 text-white" />
+                  <BuildingOffice2Icon className="w-6 h-6 text-white" />
                 ) : (
-                  <RocketLaunchIcon className="w-7 h-7 text-white" />
+                  <RocketLaunchIcon className="w-6 h-6 text-white" />
                 )}
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                <h1 className="text-lg lg:text-xl font-extrabold text-white tracking-tight">
                   {isEdit ? "Edit Account" : "Create New Account"}
                 </h1>
-                <p className="text-purple-200 mt-1">
+                <p className="text-[11px] font-bold text-purple-200 uppercase tracking-wider mt-0.5">
                   {isEdit
                     ? `Updating ${account?.accountName || "account"}`
-                    : "Add a new business account to your CRM"}
+                    : "Add a new business account"}
                 </p>
               </div>
             </div>
@@ -1146,10 +1146,10 @@ const AccountForm = () => {
       <form
         id="account-form"
         onSubmit={handleSubmit}
-        className="grid lg:grid-cols-4 gap-8"
+        className="grid lg:grid-cols-4 gap-8 mx-0 lg:mx-8"
       >
         {/* ══════ LEFT COLUMN (3/4) ══════ */}
-        <div className="lg:col-span-3 space-y-8">
+        <div className="lg:col-span-3 space-y-6">
           {/* ── ACCOUNT LOGO ── */}
           <SectionCard
             icon={PhotoIcon}
@@ -1191,9 +1191,9 @@ const AccountForm = () => {
                 value={form.accountOwnerId}
                 onChange={handleChange}
                 required
-                disabled={user?.role === "SALES_REP"}
+                disabled={!["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role)}
                 options={
-                  user?.role === "SALES_REP"
+                  !["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role)
                     ? [{ id: user.id, name: user.name }]
                     : users
                 }
@@ -1207,7 +1207,7 @@ const AccountForm = () => {
                 icon={UsersIcon}
                 value={form.keyAccountManagerId || ""}
                 onChange={handleChange}
-                options={users.filter((u) => u.role === "MANAGER")}
+                options={users.filter((u) => ["KAM", "MANAGER"].includes(u.role))}
                 placeholder="Select manager"
                 hint="Key Account Manager for this account"
               />

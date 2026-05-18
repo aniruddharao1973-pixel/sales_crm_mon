@@ -24,17 +24,18 @@ router.use(protect);
 // router.get("/pipeline/stats", getPipelineStats);
 router.post(
   "/import",
-  authorize("ADMIN", "MANAGER"),
+  protect,
+  authorize("SUPER_ADMIN", "TSL"),
   upload.single("file"),
   importDeals,
 );
-router.post("/bulk-delete", protect, bulkDeleteDeals);
-router.route("/").get(getDeals).post(validateDeal, createDeal);
+router.post("/bulk-delete", protect, authorize("SUPER_ADMIN", "TSL"), bulkDeleteDeals);
+router.route("/").get(getDeals).post(authorize("SUPER_ADMIN", "TSL", "MANAGER"), validateDeal, createDeal);
 router
   .route("/:id")
   .get(getDeal)
-  .put(validateDeal, updateDeal)
-  .delete(authorize("ADMIN", "MANAGER"), deleteDeal);
+  .put(authorize("SUPER_ADMIN", "TSL", "MANAGER", "TSE"), validateDeal, updateDeal)
+  .delete(authorize("SUPER_ADMIN", "TSL", "MANAGER"), deleteDeal);
 
 router.put("/stage-history/:id", updateStageHistoryNote);
 

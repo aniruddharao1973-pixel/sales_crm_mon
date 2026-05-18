@@ -67,27 +67,27 @@ const InfoItem = ({
   iconBg = "bg-[#3B2E7E]/10",
   iconColor = "text-[#3B2E7E]",
 }) => {
-  if (!value || value === "—") return null;
+  const displayValue = value && value !== "—" ? value : "—";
 
   const content = (
-    <div className="group flex items-center gap-4 p-4 rounded-xl hover:bg-[#3B2E7E]/5 transition-all duration-200">
+    <div className="group flex items-center gap-4 p-3 rounded-xl hover:bg-[#3B2E7E]/5 transition-all duration-200">
       <div
-        className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}
+        className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}
       >
-        <Icon className={`w-5 h-5 ${iconColor}`} />
+        <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
           {label}
         </p>
-        {isLink ? (
+        {isLink && displayValue !== "—" ? (
           <span className="text-sm font-semibold text-[#3B2E7E] hover:text-[#2A1F5C] flex items-center gap-1.5 transition-colors">
-            {value}
+            {displayValue}
             {external && <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />}
           </span>
         ) : (
-          <p className="text-sm font-semibold text-slate-800 truncate">
-            {value}
+          <p className={`text-sm font-semibold truncate ${displayValue === "—" ? "text-slate-300 italic" : "text-slate-800"}`}>
+            {displayValue}
           </p>
         )}
       </div>
@@ -123,16 +123,16 @@ const StatCard = ({ icon: Icon, label, value, variant = "primary" }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-5 border border-[#3B2E7E]/10 hover:shadow-lg hover:shadow-[#3B2E7E]/10 transition-all duration-300">
+    <div className="bg-white rounded-xl p-3.5 border border-[#3B2E7E]/10 hover:shadow-lg hover:shadow-[#3B2E7E]/10 transition-all duration-300">
       <div
-        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${variants[variant]} flex items-center justify-center mb-4 shadow-lg`}
+        className={`w-10 h-10 rounded-lg bg-gradient-to-br ${variants[variant]} flex items-center justify-center mb-3 shadow-lg`}
       >
-        <Icon className="w-6 h-6 text-white" />
+        <Icon className="w-5 h-5 text-white" />
       </div>
-      <p className="text-2xl font-bold text-slate-800 truncate">
+      <p className="text-xl font-bold text-slate-800 truncate">
         {value || "—"}
       </p>
-      <p className="text-xs font-medium text-slate-500 mt-1">{label}</p>
+      <p className="text-[11px] font-medium text-slate-500 mt-0.5">{label}</p>
     </div>
   );
 };
@@ -312,6 +312,7 @@ const AccountDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { account, detailLoading } = useSelector((s) => s.accounts);
+  const { user: currentUser } = useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(fetchAccount(id));
@@ -366,35 +367,35 @@ const AccountDetail = () => {
       </div>
 
       {/* Hero Header Section */}
-      <div className="bg-white rounded-[2rem] shadow-xl shadow-[#3B2E7E]/5 border border-[#3B2E7E]/10 overflow-hidden mb-8">
-        <div className="relative bg-gradient-to-br from-[#3B2E7E] to-[#2A1F5C] p-8 lg:p-10 overflow-hidden">
-          {/* Background Patterns */}
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
+      <div className="bg-white rounded-3xl shadow-xl shadow-[#3B2E7E]/5 border border-[#3B2E7E]/10 overflow-hidden mb-6 mx-0 lg:mx-8">
+        <div className="relative bg-gradient-to-br from-[#3B2E7E] to-[#2A1F5C] p-3 lg:p-4 overflow-hidden">
+          {/* Background Patterns - Subtle */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-300 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
           </div>
 
           <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
               <div className="relative group">
-                <div className="ring-4 ring-white/20 rounded-2xl p-1 bg-white/10 backdrop-blur-md shadow-2xl group-hover:scale-105 transition-transform duration-300">
+                <div className="ring-2 ring-white/20 rounded-xl p-0.5 bg-white/10 backdrop-blur-md shadow-2xl transition-transform duration-300">
                   {account.image ? (
                     <img
                       src={account.image}
                       alt={account.accountName}
-                      className="w-24 h-24 rounded-xl object-cover"
+                      className="w-14 h-14 rounded-lg object-cover"
                     />
                   ) : (
-                    <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
-                      <BuildingOffice2Icon className="w-12 h-12 text-white" />
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center">
+                      <BuildingOffice2Icon className="w-7 h-7 text-white" />
                     </div>
                   )}
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <h1 className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                <div className="flex items-center gap-2.5 mb-1">
+                  <h1 className="text-lg lg:text-xl font-extrabold text-white tracking-tight">
                     {account.accountName}
                   </h1>
                   {account.lifecycle && (
@@ -458,15 +459,16 @@ const AccountDetail = () => {
                   Website
                 </a>
               )}
-              {account.lifecycle !== "DEACTIVATED" && (
-                <button
-                  onClick={() => navigate(`/accounts/${id}/edit`)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#3B2E7E] text-sm font-bold rounded-xl hover:bg-purple-50 active:scale-[0.98] transition-all shadow-xl shadow-[#2A1F5C]/40"
-                >
-                  <PencilSquareIcon className="w-4 h-4" />
-                  Edit Account
-                </button>
-              )}
+              {account.lifecycle !== "DEACTIVATED" &&
+                !["TSE", "KAM"].includes(currentUser?.role) && (
+                  <button
+                    onClick={() => navigate(`/accounts/${id}/edit`)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#3B2E7E] text-sm font-bold rounded-xl hover:bg-purple-50 active:scale-[0.98] transition-all shadow-xl shadow-[#2A1F5C]/40"
+                  >
+                    <PencilSquareIcon className="w-4 h-4" />
+                    Edit Account
+                  </button>
+                )}
             </div>
           </div>
         </div>
@@ -509,13 +511,15 @@ const AccountDetail = () => {
             title="Deals Pipeline"
             subtitle={`Total Pipeline Value: ${formatCurrency(totalDealsValue)}`}
             action={
-              <button
-                onClick={() => navigate(`/deals/new?accountId=${id}`)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all"
-              >
-                <PlusIcon className="w-4 h-4" />
-                New Deal
-              </button>
+              !["TSE", "KAM"].includes(currentUser?.role) && (
+                <button
+                  onClick={() => navigate(`/deals/new?accountId=${id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  New Deal
+                </button>
+              )
             }
           >
             {account.deals?.length > 0 ? (
@@ -525,7 +529,12 @@ const AccountDetail = () => {
                 ))}
               </div>
             ) : (
-              <EmptyState icon={CurrencyRupeeIcon} title="No deals associated" action="Create a deal" onAction={() => navigate(`/deals/new?accountId=${id}`)} />
+              <EmptyState
+                icon={CurrencyRupeeIcon}
+                title="No deals associated"
+                action={!["TSE", "KAM"].includes(currentUser?.role) ? "Create a deal" : null}
+                onAction={() => navigate(`/deals/new?accountId=${id}`)}
+              />
             )}
           </SectionCard>
 
@@ -534,13 +543,15 @@ const AccountDetail = () => {
             title="Contacts"
             subtitle="People associated with this account"
             action={
-              <button
-                onClick={() => navigate(`/contacts/new?accountId=${id}`)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#3B2E7E]/20 text-[#3B2E7E] text-sm font-semibold rounded-xl hover:bg-[#3B2E7E]/5 transition-all"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Add Contact
-              </button>
+              !["TSE", "KAM"].includes(currentUser?.role) && (
+                <button
+                  onClick={() => navigate(`/contacts/new?accountId=${id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#3B2E7E]/20 text-[#3B2E7E] text-sm font-semibold rounded-xl hover:bg-[#3B2E7E]/5 transition-all"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add Contact
+                </button>
+              )
             }
           >
             {account.contacts?.length > 0 ? (
@@ -550,7 +561,12 @@ const AccountDetail = () => {
                 ))}
               </div>
             ) : (
-              <EmptyState icon={UserGroupIcon} title="No contacts found" action="Add your first contact" onAction={() => navigate(`/contacts/new?accountId=${id}`)} />
+              <EmptyState
+                icon={UserGroupIcon}
+                title="No contacts found"
+                action={!["TSE", "KAM"].includes(currentUser?.role) ? "Add your first contact" : null}
+                onAction={() => navigate(`/contacts/new?accountId=${id}`)}
+              />
             )}
           </SectionCard>
         </div>

@@ -281,7 +281,7 @@ const PRODUCT_GROUPS = [
   },
   {
     id: "FACTEYES",
-    label: "Facteyes",
+    label: "Micrologic Edge",
     icon: "👁️",
     description: "Vision system",
   },
@@ -1322,8 +1322,8 @@ const DealForm = () => {
         Object.entries(form).map(([k, v]) => [k, v || null]),
       );
 
-      // ✅ enforce owner for SALES_REP (security fix)
-      if (user?.role === "SALES_REP") {
+      // ✅ enforce owner for restricted roles (security fix)
+      if (!["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role)) {
         payload.dealOwnerId = user.id;
       }
 
@@ -1481,9 +1481,9 @@ const DealForm = () => {
                 icon={ShieldCheckIcon}
                 value={form.dealOwnerId}
                 onChange={handleChange}
-                disabled={user?.role === "SALES_REP"}
+                disabled={!["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role)}
                 options={
-                  user?.role === "SALES_REP"
+                  !["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role)
                     ? [{ id: user.id, name: user.name }]
                     : users
                 }

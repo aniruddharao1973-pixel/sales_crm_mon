@@ -42,7 +42,7 @@ export const runRFQMonitor = async () => {
         <p>Please review and take necessary action.</p>
 
         <br/>
-        <p>Regards,<br/>FactEyes CRM</p>
+        <p>Regards,<br/>Micrologic Edge</p>
       `;
 
       await sendMail({

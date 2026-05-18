@@ -27,27 +27,29 @@ router.get("/dropdown/list", getAccountsDropdown);
 router.get("/", getAccounts);
 router.get("/:id", getAccount);
 
-// 🛑 ADMIN, MANAGER, SALES_REP → create / update
+// 🛑 SUPER_ADMIN, TSL → import
 router.post(
   "/import",
-  authorize("ADMIN", "MANAGER"),
+  authorize("SUPER_ADMIN", "TSL"),
   upload.single("file"),
   importAccounts,
 );
+
+// 🛑 SUPER_ADMIN, TSL, MANAGER → create / update
 router.post(
   "/",
-  authorize("ADMIN", "MANAGER", "SALES_REP"),
+  authorize("SUPER_ADMIN", "TSL", "MANAGER"),
   validateAccount,
   createAccount,
 );
 router.put(
   "/:id",
-  authorize("ADMIN", "MANAGER", "SALES_REP"),
+  authorize("SUPER_ADMIN", "TSL", "MANAGER"),
   validateAccount,
   updateAccount,
 );
-router.delete("/:id", authorize("ADMIN", "MANAGER"), deleteAccount);
+router.delete("/:id", authorize("SUPER_ADMIN", "TSL"), deleteAccount);
 
-router.patch("/:id/restore", authorize("ADMIN", "MANAGER"), restoreAccount);
+router.patch("/:id/restore", authorize("SUPER_ADMIN", "TSL"), restoreAccount);
 
 export default router;

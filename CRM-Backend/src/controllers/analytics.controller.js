@@ -7,7 +7,7 @@ import { getDealPriority } from "../services/analytics/dealPriority.service.js";
    DASHBOARD OVERVIEW (Clean Operational Version)
 ============================================================ */
 export const getDashboardAnalytics = asyncHandler(async (req, res) => {
-  const isRestricted = req.user.role !== "ADMIN";
+  const isRestricted = !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role);
   const accFilter = isRestricted
     ? {
         lifecycle: { not: "DEACTIVATED" },
@@ -146,7 +146,7 @@ export const getDashboardAnalytics = asyncHandler(async (req, res) => {
    DEALS BY STAGE (Count Only)
 ============================================================ */
 export const getDealsByStage = asyncHandler(async (req, res) => {
-  const isRestricted = req.user.role !== "ADMIN";
+  const isRestricted = !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role);
   const dealFilter = isRestricted
     ? {
         OR: [
@@ -178,7 +178,7 @@ export const getDealsByStage = asyncHandler(async (req, res) => {
    MONTHLY TREND (Count-Based Only)
 ============================================================ */
 export const getMonthlyTrend = asyncHandler(async (req, res) => {
-  const isRestricted = req.user.role !== "ADMIN";
+  const isRestricted = !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role);
   const dealFilter = isRestricted
     ? {
         OR: [
@@ -239,7 +239,7 @@ export const getMonthlyTrend = asyncHandler(async (req, res) => {
    TOP PERFORMERS (No Revenue, Only Deal Performance)
 ============================================================ */
 export const getTopPerformers = asyncHandler(async (req, res) => {
-  const isRestricted = req.user.role !== "ADMIN";
+  const isRestricted = !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role);
   const dealFilter = isRestricted
     ? {
         OR: [
@@ -300,8 +300,8 @@ export const getTopPerformers = asyncHandler(async (req, res) => {
    DEALS BY LEAD SOURCE (Count-Based)
 ============================================================ */
 export const getDealsBySource = asyncHandler(async (req, res) => {
-  const isSalesRep = req.user.role === "SALES_REP";
-  const dealFilter = isSalesRep ? { dealOwnerId: req.user.id } : {};
+  const isRestricted = !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role);
+  const dealFilter = isRestricted ? { dealOwnerId: req.user.id } : {};
 
   const sources = await prisma.deal.groupBy({
     by: ["leadSource"],
@@ -339,7 +339,7 @@ export const getDealsBySource = asyncHandler(async (req, res) => {
    RECENT ACTIVITIES
 ============================================================ */
 export const getRecentActivities = asyncHandler(async (req, res) => {
-  const isRestricted = req.user.role !== "ADMIN";
+  const isRestricted = !["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role);
   const accFilter = isRestricted
     ? {
         OR: [

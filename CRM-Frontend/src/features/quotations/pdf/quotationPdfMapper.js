@@ -309,7 +309,7 @@ export function buildQuotationPdfData(quotation) {
       address: cover.address || quotation?.account?.address || "-",
       contactName: cover.contactName || quotation?.contact?.firstName || quotation?.contactName || "-",
       department: cover.department || quotation?.contact?.department || "-",
-      phone: cover.phone || quotation?.contact?.phone || "-",
+      phone: cover.phone || quotation?.contact?.mobile || quotation?.contact?.phone || "-",
       email: cover.email || quotation?.contact?.email || "-",
       projectName: cover.projectName || quotation?.projectName || quotation?.dealName || quotation?.deal?.dealName || "test_data",
       referenceDocuments: cover.referenceDocuments || DEFAULT_REFERENCE_DOCS,

@@ -49,13 +49,19 @@ export const createQuotationController = async (req, res) => {
     }
 
     // 2. Authorization check
-    const isAdmin = req.user?.role === "ADMIN";
+    const isPowerUser = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user?.role);
+    const isTSE = req.user?.role === "TSE";
     // We compare against user name since personInCharge is currently a string field
-    const isPIC = deal.personInCharge === req.user?.name;
+    const isPIC = deal.personInCharge && deal.personInCharge.toLowerCase() === req.user?.name?.toLowerCase();
+    
+    // 🔥 NEW: Check assignments as well
+    const isAssigned = await prisma.dealAssignment.findFirst({
+      where: { dealId: deal.id, userId: req.user.id }
+    });
 
-    if (!isAdmin && !isPIC) {
+    if (!isPowerUser && !(isTSE && (isPIC || isAssigned))) {
       return res.status(403).json({
-        message: `Unauthorized: Only Admin or the Person in Charge (${deal.personInCharge}) can create quotations for this deal.`,
+        message: `Unauthorized: Only Admin, Manager, TSL or the assigned Technical Sales Employee (${deal.personInCharge || "assigned user"}) can create quotations for this deal.`,
       });
     }
 
@@ -90,18 +96,21 @@ export const createQuotationController = async (req, res) => {
 /* ================= GET ALL ================= */
 export const getQuotationsController = async (req, res) => {
   try {
+    // ✅ Authorization: Power users see all, others see PIC or KAM records
+    const isPowerUser = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user?.role);
+    const where = {
+      isLatest: true,
+      ...(!isPowerUser && {
+        OR: [
+          { deal: { personInCharge: { equals: req.user.name, mode: "insensitive" } } },
+          { account: { keyAccountManagerId: req.user.id } },
+          { account: { assignments: { some: { userId: req.user.id } } } },
+        ],
+      }),
+    };
+
     const data = await prisma.quotation.findMany({
-      where: {
-        isLatest: true,
-        // ✅ Authorization: Admin sees all, others see PIC or KAM records
-        ...(req.user.role !== "ADMIN" && {
-          OR: [
-            { deal: { personInCharge: req.user.name } },
-            { account: { keyAccountManagerId: req.user.id } },
-            { account: { accountOwnerId: req.user.id } },
-          ],
-        }),
-      },
+      where,
       include: {
         account: {
           select: {
@@ -116,15 +125,27 @@ export const getQuotationsController = async (req, res) => {
             billingCountry: true,
 
             contacts: {
+              where: {
+                ...(req.user.role === "TSE" && {
+                  deals: {
+                    some: {
+                      OR: [
+                        { personInCharge: { equals: req.user.name, mode: "insensitive" } },
+                        { assignments: { some: { userId: req.user.id } } },
+                      ],
+                    },
+                  },
+                }),
+              },
               select: {
-                id: true, // 🔥 ADD THIS
+                id: true,
                 salutation: true,
                 firstName: true,
                 lastName: true,
                 email: true,
                 phone: true,
               },
-              take: 1, // 👈 only primary contact
+              take: 1,
             },
             keyAccountManager: {
               select: { id: true, name: true, email: true, mobile: true },
@@ -133,6 +154,11 @@ export const getQuotationsController = async (req, res) => {
         },
         deal: {
           include: { contact: true },
+        },
+        approvals: {
+          include: { actedBy: { select: { id: true, name: true, role: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 1, // Only need the latest action for the list
         },
         items: {
           include: {
@@ -210,6 +236,18 @@ export const getQuotationByIdController = async (req, res) => {
             billingCountry: true,
 
             contacts: {
+              where: {
+                ...(req.user.role === "TSE" && {
+                  deals: {
+                    some: {
+                      OR: [
+                        { personInCharge: { equals: req.user.name, mode: "insensitive" } },
+                        { assignments: { some: { userId: req.user.id } } },
+                      ],
+                    },
+                  },
+                }),
+              },
               select: {
                 id: true,
                 salutation: true,
@@ -256,7 +294,7 @@ export const getQuotationByIdController = async (req, res) => {
     const quotationWithHistory = await attachRevisionHistory(quotation);
 
     // ✅ AUTHORIZATION CHECK
-    const isAdmin = req.user.role === "ADMIN";
+    const isAdmin = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user.role);
     const isPIC = quotation.deal?.personInCharge === req.user.name;
     const isKAM = quotation.account?.keyAccountManagerId === req.user.id;
     const isAccountOwner = quotation.account?.accountOwnerId === req.user.id;
@@ -286,7 +324,7 @@ export const deleteQuotationController = async (req, res) => {
     console.log("==================================");
 
     // 🔒 RBAC CHECK
-    if (req.user?.role !== "ADMIN") {
+    if (!["SUPER_ADMIN", "TSL"].includes(req.user?.role)) {
       return res.status(403).json({
         message: "Only admin can delete quotation",
       });
@@ -319,13 +357,14 @@ export const updateQuotationController = async (req, res) => {
       return res.status(404).json({ message: "Quotation not found" });
     }
 
-    // 🔒 RBAC CHECK: Only PIC or Admin can update
-    const isAdmin = req.user?.role === "ADMIN";
+    // 🔒 RBAC CHECK: Only PIC, Admin, or respective KAM can update
+    const isAdmin = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user?.role);
     const isPIC = existing.deal?.personInCharge === req.user?.name;
+    const isKAM = req.user?.role === "KAM" && req.user?.id === existing.account?.keyAccountManagerId;
 
-    if (!isAdmin && !isPIC) {
+    if (!isAdmin && !isPIC && !isKAM) {
       return res.status(403).json({
-        message: `Unauthorized: Only Admin or the Person in Charge (${existing.deal?.personInCharge || "N/A"}) can update this quotation.`,
+        message: `Unauthorized: Only Admin, Manager, TSL, PIC, or the respective KAM can update this quotation.`,
       });
     }
 
@@ -435,13 +474,15 @@ export const submitQuotationController = async (req, res) => {
       return res.status(404).json({ message: "Quotation not found" });
     }
 
-    // 🔒 RBAC CHECK: Only PIC or Admin can submit
-    const isAdmin = req.user?.role === "ADMIN";
-    const isPIC = quotation.deal?.personInCharge === req.user?.name;
+    // 🔒 RBAC CHECK: Power users, PIC (TSE), or KAM can submit
+    const isPowerUser = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user?.role);
+    const isTSE = req.user?.role === "TSE";
+    const isPIC = quotation.deal?.personInCharge && quotation.deal.personInCharge.toLowerCase() === req.user?.name?.toLowerCase();
+    const isKAM = req.user?.role === "KAM" && req.user?.id === quotation.account?.keyAccountManagerId;
 
-    if (!isAdmin && !isPIC) {
+    if (!isPowerUser && !(isTSE && isPIC) && !isKAM) {
       return res.status(403).json({
-        message: `Unauthorized: Only Admin or the Person in Charge (${quotation.deal?.personInCharge || "N/A"}) can submit this quotation.`,
+        message: `Unauthorized: Only Admin, Manager, TSL, the assigned PIC, or the respective KAM can submit this quotation.`,
       });
     }
 
@@ -543,36 +584,40 @@ export const approveQuotationController = async (req, res) => {
       return res.status(404).json({ message: "Quotation not found" });
     }
 
-    // 🔒 RBAC: ADMIN or respective KAM
-    const isAdmin = req.user?.role === "ADMIN";
-    const isKAM = req.user?.id === quotation.account?.keyAccountManagerId;
-
-    if (!isAdmin && !isKAM) {
-      return res
-        .status(403)
-        .json({ message: "Only Admin or respective KAM can approve" });
-    }
-
-    if (!quotation) {
-      return res.status(404).json({ message: "Quotation not found" });
-    }
-
-    if (quotation.status !== "SUBMITTED") {
+    if (quotation.status !== "SUBMITTED" && quotation.status !== "APPROVED") {
       return res.status(400).json({
-        message: "Only submitted quotations can be approved",
+        message: "Only submitted or approved quotations can be processed",
       });
     }
 
+    // 🔒 RBAC: Power users or respective KAM
+    const isPowerUser = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user?.role);
+    const isKAM = req.user?.role === "KAM" && req.user?.id === quotation.account?.keyAccountManagerId;
+
+    if (!isPowerUser && !isKAM) {
+      return res
+        .status(403)
+        .json({ message: "Only Admin, Manager, TSL or respective KAM can approve/authorize" });
+    }
+
+    // If already approved, only Manager/TSL/Admin can authorize
+    if (quotation.status === "APPROVED" && !isPowerUser) {
+      return res.status(403).json({ message: "Only Managers can authorize quotations" });
+    }
+
     await prisma.$transaction(async (tx) => {
+      const nextStatus = quotation.status === "SUBMITTED" ? "APPROVED" : "AUTHORIZED";
+      const nextAction = quotation.status === "SUBMITTED" ? "APPROVED" : "AUTHORIZED";
+
       await tx.quotation.update({
         where: { id },
-        data: { status: "APPROVED" },
+        data: { status: nextStatus },
       });
 
       await tx.quotationApproval.create({
         data: {
           quotationId: id,
-          action: "APPROVED",
+          action: nextAction,
           actedById: req.user.id,
         },
       });
@@ -651,7 +696,7 @@ export const rejectQuotationController = async (req, res) => {
     }
 
     // 🔒 RBAC: ADMIN or respective KAM
-    const isAdmin = req.user?.role === "ADMIN";
+    const isAdmin = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user?.role);
     const isKAM = req.user?.id === quotation.account?.keyAccountManagerId;
 
     if (!isAdmin && !isKAM) {
@@ -828,12 +873,18 @@ export const reviseQuotationController = async (req, res) => {
       });
     }
 
-    const isAdmin = req.user?.role === "ADMIN";
+    const isAdmin = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(req.user?.role);
     const isPIC = quotation.deal?.personInCharge === req.user?.name;
 
     if (!isAdmin && !isPIC) {
       return res.status(403).json({
         message: `Unauthorized: Only Admin or the Person in Charge (${quotation.deal?.personInCharge || "N/A"}) can revise this quotation.`,
+      });
+    }
+
+    if (quotation.status !== "APPROVED" && quotation.status !== "AUTHORIZED") {
+      return res.status(400).json({
+        message: "Only approved or authorized quotations can be revised",
       });
     }
 

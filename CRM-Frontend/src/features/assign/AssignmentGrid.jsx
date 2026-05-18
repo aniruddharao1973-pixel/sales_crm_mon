@@ -637,7 +637,6 @@ const MobileCard = ({ record, users, toggleLoadingMap, type, dispatch }) => {
                 `}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar name={u.name} index={i} size="sm" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate leading-tight">
                       {u.name}
@@ -690,7 +689,6 @@ const DesktopTable = ({ records, users, toggleLoadingMap, type, dispatch }) => (
               className="bg-gray-50 border-b border-gray-200 px-3 py-2.5 text-center min-w-[130px]"
             >
               <div className="flex flex-col items-center gap-1.5">
-                <Avatar name={u.name} index={i} size="lg" />
                 <span className="text-xs font-semibold text-gray-700 leading-tight max-w-[100px] truncate">
                   {u.name}
                 </span>

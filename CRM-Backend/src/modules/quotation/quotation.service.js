@@ -9,7 +9,6 @@ const SGST_RATE = 0.09;
 export const createQuotation = async (data) => {
   const {
     quotationNumber,
-    quotationType = "QUOTATION",
     accountId,
     dealId,
     issueDate,
@@ -41,7 +40,7 @@ export const createQuotation = async (data) => {
   });
 
   const maxLimit = user?.maxDiscount ?? 0;
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role);
 
   // If not admin, enforce discount limit
   const checkLimit = (discount, name) => {
@@ -94,7 +93,6 @@ export const createQuotation = async (data) => {
       data: {
         // createdBy: current.createdBy,
         quotationNo: quotationNo,
-        quotationType,
         // 🔥 ADD THIS
         version: maxRevision + 1,
         isLatest: true,
@@ -365,7 +363,7 @@ export const updateQuotation = async (id, data) => {
     });
 
     const maxLimit = user?.maxDiscount ?? 0;
-    const isAdmin = user?.role === "ADMIN";
+    const isAdmin = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role);
 
     const checkLimit = (discount, name, existingDiscount = 0) => {
       // Logic: User can add up to their maxLimit on top of what's already there
@@ -399,7 +397,6 @@ export const updateQuotation = async (id, data) => {
       data: {
         issueDate: issueDate ? new Date(issueDate) : current.issueDate,
         validUntil: validUntil ? new Date(validUntil) : current.validUntil,
-        quotationType: data.quotationType || current.quotationType,
         notes: notes ?? current.notes,
         terms: terms ?? current.terms,
         paymentTerms:
@@ -632,8 +629,8 @@ export const reviseQuotation = async (id, userId, reason = "History") => {
     });
 
     if (!original) throw new Error("Quotation not found");
-    if (original.status !== "APPROVED") {
-      throw new Error("Only approved quotations can be revised");
+    if (original.status !== "APPROVED" && original.status !== "AUTHORIZED") {
+      throw new Error("Only approved or authorized quotations can be revised");
     }
 
     // 2. Generate new quotation number
@@ -641,6 +638,8 @@ export const reviseQuotation = async (id, userId, reason = "History") => {
       where: { id: original.dealId },
       select: { dealLogId: true },
     });
+
+  //  
 
     if (!deal) throw new Error("Deal not found");
 
@@ -668,7 +667,6 @@ export const reviseQuotation = async (id, userId, reason = "History") => {
     const newQuotation = await tx.quotation.create({
       data: {
         quotationNo: newQuotationNo,
-        quotationType: original.quotationType,
         version: maxRevision + 1,
         isLatest: true,
         parentQuotationId: original.id, // Link to previous revision

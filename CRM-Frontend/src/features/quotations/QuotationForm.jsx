@@ -75,7 +75,6 @@ const DEFAULT_PAYMENT_TERMS = [
 ];
 
 const DEFAULT_DELIVERY_TERMS = [
-  "Ex-Works Micrologic",
   "Freight, packing and forwarding extra",
   "Delivery schedule depends on customer approval and PO release",
 ];
@@ -172,7 +171,6 @@ export default function QuotationForm() {
   };
 
   const [form, setForm] = useState({
-    quotationType: "QUOTATION",
     quotationNumber: "",
     logId: "",
     accountId: "",
@@ -305,7 +303,6 @@ export default function QuotationForm() {
               (1 - Number(sub.discount || 0) / 100),
           })),
         })),
-        quotationType: quotation.quotationType || "QUOTATION",
       });
 
       dispatch(fetchDealsByAccount(quotation.accountId));
@@ -328,7 +325,7 @@ export default function QuotationForm() {
       }
 
       // --- USER DISCOUNT LIMIT CHECK (ADDITIVE) ---
-      if (currentUser?.role !== "ADMIN") {
+      if (!["SUPER_ADMIN", "TSL"].includes(currentUser?.role)) {
         const maxLimit = currentUser?.maxDiscount || 0;
 
         // Build map of original discounts if editing
@@ -396,7 +393,6 @@ export default function QuotationForm() {
 
       const payload = {
         quotationNumber: form.quotationNumber,
-        quotationType: form.quotationType,
         accountId: form.accountId,
         dealId: form.dealId,
         contactIds: form.contactIds,
@@ -885,9 +881,9 @@ export default function QuotationForm() {
 
       // 🔥 AUTHORIZATION CHECK: Only PIC or Admin can use this Log ID
       if (
-        currentUser?.role !== "ADMIN" &&
+        !["SUPER_ADMIN", "TSL", "MANAGER"].includes(currentUser?.role) &&
         deal.personInCharge &&
-        deal.personInCharge !== currentUser?.name
+        deal.personInCharge.toLowerCase() !== currentUser?.name?.toLowerCase()
       ) {
         toast.error(
           `Unauthorized: This lead is assigned to ${deal.personInCharge}. Only they can create quotations for it.`,
@@ -926,7 +922,10 @@ export default function QuotationForm() {
       if (!silent) toast.success("Log ID loaded");
     } catch (err) {
       console.error(err);
-      if (!silent) toast.error("Failed to fetch Log ID");
+      if (!silent) {
+        const msg = err?.response?.data?.message || "Failed to fetch Log ID";
+        toast.error(msg);
+      }
     } finally {
       setIsSearchingLog(false);
     }
@@ -1139,11 +1138,7 @@ export default function QuotationForm() {
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <h1 className="text-[17px] font-black tracking-tight text-slate-900">
-                      {form.quotationType === "BUDGETARY"
-                        ? "Budgetary Quotation"
-                        : form.quotationType === "FIRM"
-                          ? "Firm Quotation"
-                          : "Quotation"}
+                      Quotation
                     </h1>
                     <span className="text-slate-300 font-light">—</span>
                     <span className="text-[14px] font-bold text-slate-500">

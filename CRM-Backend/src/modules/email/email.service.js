@@ -460,7 +460,7 @@ export const deleteTemplate = async (templateId, userId) => {
     3️⃣ Template has no owner (AI / legacy)
     */
 
-    const isAdmin = user?.role === "ADMIN";
+    const isAdmin = ["SUPER_ADMIN", "TSL"].includes(user?.role);
     const isOwner = template.createdById === userId;
     const isOrphan = !template.createdById;
 

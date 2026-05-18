@@ -35,22 +35,47 @@ export const createItem = async (req, res) => {
       });
     }
 
-const item = await createItemService({
-  category: category || null,
+    if (!category) {
+      return res.status(400).json({
+        message: "Category is required",
+      });
+    }
 
-  parentId: parentId || null,
+    if (parentId) {
+      const parent = await prisma.item.findUnique({
+        where: { id: parentId },
+      });
 
-  pricingMode: pricingMode || "parent_only",
+      if (!parent) {
+        return res.status(404).json({
+          message: "Parent item not found",
+        });
+      }
 
-  sku,
-  name,
-  description,
-  basePrice,
-  make,
-  mfgPartNo,
-  uom,
-  defaultRemarks,
-});
+      // ✅ prevent sub-sub-items
+      if (parent.parentId) {
+        return res.status(400).json({
+          message: "Sub items cannot have child items",
+        });
+      }
+    }
+
+    const item = await createItemService({
+      category: category || null,
+
+      parentId: parentId || null,
+
+      pricingMode: pricingMode || "parent_only",
+
+      sku,
+      name,
+      description,
+      basePrice,
+      make,
+      mfgPartNo,
+      uom,
+      defaultRemarks,
+    });
 
     res.status(201).json(item);
   } catch (err) {
@@ -107,25 +132,24 @@ export const updateItem = async (req, res) => {
       mfgPartNo,
       uom,
       defaultRemarks,
-      parentId,
     } = req.body;
 
-const item = await updateItemService(req.params.id, {
-  category: category || null,
+    const item = await updateItemService(req.params.id, {
+      category: category || null,
 
-  parentId: parentId !== undefined ? parentId : undefined,
+      parentId: undefined,
 
-  pricingMode: pricingMode || "parent_only",
+      pricingMode: pricingMode || "parent_only",
 
-  sku,
-  name,
-  description,
-  basePrice,
-  make,
-  mfgPartNo,
-  uom,
-  defaultRemarks,
-});
+      sku,
+      name,
+      description,
+      basePrice,
+      make,
+      mfgPartNo,
+      uom,
+      defaultRemarks,
+    });
     res.json(item);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -281,11 +305,16 @@ export const searchItems = async (req, res) => {
         },
       },
 
-      orderBy: {
-        createdAt: "asc",
-      },
+      orderBy: [
+        {
+          sku: "asc",
+        },
+        {
+          createdAt: "asc",
+        },
+      ],
 
-      take: 15,
+      take: 100,
     });
 
     res.json(items);

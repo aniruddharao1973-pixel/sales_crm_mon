@@ -244,18 +244,20 @@ const RowActionMenu = ({ deal, currentUser, onDelete, onNavigate }) => {
               <EyeIcon className="w-4.5 h-4.5 text-slate-400" />
               View Details
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onNavigate(`/deals/${deal.id}/edit`);
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
-            >
-              <PencilSquareIcon className="w-4.5 h-4.5 text-slate-400" />
-              Edit Lead
-            </button>
-            {currentUser?.role !== "SALES_REP" && (
+            {currentUser?.role !== "KAM" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate(`/deals/${deal.id}/edit`);
+                  setIsOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+              >
+                <PencilSquareIcon className="w-4.5 h-4.5 text-slate-400" />
+                Edit Lead
+              </button>
+            )}
+            {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) && (
               <>
                 <div className="border-t border-slate-100 my-1.5" />
                 <button
@@ -690,34 +692,36 @@ const DealList = () => {
                 <SortDropdown isOpen={showSortDropdown} onClose={() => setShowSortDropdown(false)} sortConfig={sortConfig} onSortChange={handleSortChange} />
               </div>
 
-              <div className="relative">
-                <button onClick={() => setShowExportDropdown(!showExportDropdown)} disabled={!deals.length} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-40">
-                  <ArrowDownTrayIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
-                {showExportDropdown && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowExportDropdown(false)} />
-                    <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
-                      <button onClick={() => {
-                        const data = prepareExportData(sortedDeals);
-                        const worksheet = XLSX.utils.json_to_sheet(data);
-                        const workbook = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
-                        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-                        const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-                        saveAs(blob, `deals_page_export_${Date.now()}.xlsx`);
-                        setShowExportDropdown(false);
-                      }} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 Current Page (Excel)</button>
-                      <button onClick={exportExcel} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 All Data (Excel)</button>
-                      <div className="border-t border-slate-200 my-1" />
-                      <button onClick={exportCSV} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📄 All Data (CSV)</button>
-                    </div>
-                  </>
-                )}
-              </div>
+              {currentUser?.role !== "TSE" && (
+                <div className="relative">
+                  <button onClick={() => setShowExportDropdown(!showExportDropdown)} disabled={!deals.length} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-40">
+                    <ArrowDownTrayIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Export</span>
+                  </button>
+                  {showExportDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowExportDropdown(false)} />
+                      <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
+                        <button onClick={() => {
+                          const data = prepareExportData(sortedDeals);
+                          const worksheet = XLSX.utils.json_to_sheet(data);
+                          const workbook = XLSX.utils.book_new();
+                          XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
+                          const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+                          const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+                          saveAs(blob, `deals_page_export_${Date.now()}.xlsx`);
+                          setShowExportDropdown(false);
+                        }} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 Current Page (Excel)</button>
+                        <button onClick={exportExcel} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📊 All Data (Excel)</button>
+                        <div className="border-t border-slate-200 my-1" />
+                        <button onClick={exportCSV} className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-[#3B2E7E]/5 hover:text-[#3B2E7E]">📄 All Data (CSV)</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
-              {(currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER") && (
+              {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) && (
                 <>
                   <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleImport} />
                   <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-white text-slate-600 border border-slate-200 rounded-xl hover:border-[#3B2E7E]/30 transition-all disabled:opacity-50">
@@ -727,10 +731,12 @@ const DealList = () => {
                 </>
               )}
 
-              <button onClick={() => navigate("/deals/new")} className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/25 transition-all flex-shrink-0">
-                <PlusIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">New Lead</span>
-              </button>
+              {!["TSE", "KAM"].includes(currentUser?.role) && (
+                <button onClick={() => navigate("/deals/new")} className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/25 transition-all flex-shrink-0">
+                  <PlusIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">New Lead</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -745,7 +751,9 @@ const DealList = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-white/50 rounded-lg">Deselect</button>
-                <button onClick={() => setBulkDeleteModal({ open: true, count: selectedIds.length })} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700"><TrashIcon className="w-4 h-4" /> Delete</button>
+                {["SUPER_ADMIN", "TSL"].includes(currentUser?.role) && (
+                  <button onClick={() => setBulkDeleteModal({ open: true, count: selectedIds.length })} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700"><TrashIcon className="w-4 h-4" /> Delete</button>
+                )}
               </div>
             </div>
           </div>
@@ -772,7 +780,7 @@ const DealList = () => {
               </div>
               <h3 className="text-base font-bold text-slate-900 mb-1">{debouncedSearch ? "No leads found" : "No leads yet"}</h3>
               <p className="text-sm text-slate-500 mb-4 text-center max-w-xs">{debouncedSearch ? `No results for "${debouncedSearch}"` : "Get started by creating your first lead"}</p>
-              <button onClick={debouncedSearch ? clearSearch : () => navigate("/deals/new")} className={`inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${debouncedSearch ? "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50" : "bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white shadow-lg shadow-[#3B2E7E]/25"}`}>
+              <button onClick={debouncedSearch ? clearSearch : () => navigate("/deals/new")} className={`inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${debouncedSearch ? "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50" : !["TSE", "KAM"].includes(currentUser?.role) ? "bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white shadow-lg shadow-[#3B2E7E]/25" : "hidden"}`}>
                 {debouncedSearch ? <><XMarkIcon className="w-4 h-4 mr-1.5" /> Clear Search</> : <><PlusIcon className="w-4 h-4 mr-1.5" /> Create Lead</>}
               </button>
             </div>

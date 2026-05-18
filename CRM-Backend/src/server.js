@@ -150,6 +150,20 @@ app.use("/api/assignment", assignmentRoutes);
 app.use("/api/quotations", quotationRoutes);
 app.use("/api/items", itemRoutes);
 
+// ✅ GLOBAL ERROR HANDLER
+app.use((err, req, res, next) => {
+  console.error("❌ API Error:", err.message);
+  
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  
+  res.status(statusCode).json({
+    success: false,
+    message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
+});
+
 app.use("/public", express.static("public"));
 
 // ✅ ADD THIS (CRITICAL FOR ATTACHMENTS)

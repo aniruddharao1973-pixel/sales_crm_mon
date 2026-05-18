@@ -50,7 +50,7 @@ const transporter = nodemailer.createTransport({
 export const sendEmail = async ({ to, subject, html }) => {
   try {
     const info = await transporter.sendMail({
-      from: `"FactEyes CRM" <facteyes@micrologicglobal.com>`, // ✅ FIXED
+      from: `"Micrologic Edge" <facteyes@micrologicglobal.com>`, // ✅ FIXED
       to,
       subject,
       html,

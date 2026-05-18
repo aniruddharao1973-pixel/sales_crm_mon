@@ -36,7 +36,7 @@ router.get("/history/:quotationNo", protect, getQuotationHistoryController);
 router.post(
   "/:id/submit",
   protect,
-  authorize("SALES_REP", "MANAGER", "ADMIN"),
+  authorize("SUPER_ADMIN", "TSL", "MANAGER", "TSE"),
   submitQuotationController,
 );
 
@@ -44,13 +44,13 @@ router.post(
 router.post(
   "/:id/approve",
   protect,
-  authorize("ADMIN", "MANAGER", "SALES_REP"),
+  authorize("SUPER_ADMIN", "TSL", "MANAGER", "KAM"),
   approveQuotationController,
 );
 router.post(
   "/:id/reject",
   protect,
-  authorize("ADMIN", "MANAGER", "SALES_REP"),
+  authorize("SUPER_ADMIN", "TSL", "MANAGER", "KAM"),
   rejectQuotationController,
 );
 
@@ -74,6 +74,6 @@ router.get("/:id", protect, getQuotationByIdController);
 router.put("/:id", protect, updateQuotationController);
 
 /* ================= DELETE ================= */
-router.delete("/:id", protect, authorize("ADMIN"), deleteQuotationController);
+router.delete("/:id", protect, authorize("SUPER_ADMIN", "TSL"), deleteQuotationController);
 
 export default router;

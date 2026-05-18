@@ -51,6 +51,8 @@ import {
   getUsers,
   deleteUser,
   updateUser,
+  changePassword,
+  resetUserPassword,
 } from "../controllers/auth.controller.js";
 
 import { protect, authorize } from "../middlewares/auth.middleware.js";
@@ -63,18 +65,29 @@ router.post("/logout", logout);
 
 router.get("/me", protect, getMe);
 
+/* CHANGE PASSWORD */
+router.put("/change-password", protect, changePassword);
+
 /* USERS */
 router.get("/users", protect, getUsers);
+
+/* ADMIN RESET PASSWORD */
+router.put(
+  "/users/:id/reset-password",
+  protect,
+  authorize("SUPER_ADMIN", "TSL"),
+  resetUserPassword,
+);
 
 /* UPDATE USER (ADD THIS) */
 router.put(
   "/users/:id",
   protect,
-  authorize("ADMIN"), // only admin can update users
+  authorize("SUPER_ADMIN", "TSL"), // only admin can update users
   updateUser,
 );
 
 /* DELETE USER */
-router.delete("/users/:id", protect, authorize("ADMIN"), deleteUser);
+router.delete("/users/:id", protect, authorize("SUPER_ADMIN", "TSL"), deleteUser);
 
 export default router;

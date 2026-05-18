@@ -1139,9 +1139,38 @@ export default function QuotationItemsTable({
                       const res = await API.get("/items/search", {
                         params: { q: value },
                       });
-                      const normalized = (res.data || []).filter(
-                        (item) => !item.parentId,
-                      );
+
+                      const q = value.trim().toLowerCase();
+
+                      const normalized = (res.data || [])
+                        .filter((item) => !item.parentId)
+                        .sort((a, b) => {
+                          const aSku = (a.sku || "").toLowerCase();
+                          const bSku = (b.sku || "").toLowerCase();
+                          const aName = (a.name || "").toLowerCase();
+                          const bName = (b.name || "").toLowerCase();
+                          const aDesc = (a.description || "").toLowerCase();
+                          const bDesc = (b.description || "").toLowerCase();
+
+                          const aScore = aSku.startsWith(q)
+                            ? 0
+                            : aName.startsWith(q)
+                              ? 1
+                              : aDesc.startsWith(q)
+                                ? 2
+                                : 3;
+                          const bScore = bSku.startsWith(q)
+                            ? 0
+                            : bName.startsWith(q)
+                              ? 1
+                              : bDesc.startsWith(q)
+                                ? 2
+                                : 3;
+
+                          if (aScore !== bScore) return aScore - bScore;
+                          return aSku.localeCompare(bSku);
+                        });
+
                       setSkuResults(normalized);
                       setShowSkuDropdown(true);
                     } catch (err) {
@@ -1275,16 +1304,16 @@ export default function QuotationItemsTable({
             }}
           >
             <colgroup>
-              <col style={{ width: "8%" }} /> {/* Category */}
-              <col style={{ width: "8%" }} /> {/* SKU */}
-              <col style={{ width: "21%" }} /> {/* Description */}
-              <col style={{ width: "6%" }} /> {/* Qty */}
-              <col style={{ width: "9%" }} /> {/* Unit Price */}
-              <col style={{ width: "9%" }} /> {/* Total Price */}
-              <col style={{ width: "6%" }} /> {/* Discount */}
-              <col style={{ width: "10%" }} /> {/* Final Price */}
-              <col style={{ width: "18%" }} /> {/* Remarks */}
-              <col style={{ width: "5%" }} /> {/* Del */}
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "21%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "5%" }} />
             </colgroup>
 
             <thead className="sticky top-0 z-[20] bg-slate-50/95 backdrop-blur-xl">

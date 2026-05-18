@@ -41,7 +41,8 @@ export default function QuotationList() {
 
   const { list, loading, history } = useSelector((state) => state.quotation);
   const { user } = useSelector((state) => state.auth);
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isAdmin = ["SUPER_ADMIN", "TSL"].includes(user?.role);
+  const isManager = user?.role === "MANAGER";
   // const [showQuotationModal, setShowQuotationModal] = useState(false);
 
   const formatAmount = (value) => {
@@ -53,15 +54,7 @@ export default function QuotationList() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [expandedRow, setExpandedRow] = useState(null);
 
-  // const handleQuotationTypeSelect = (type) => {
-  //   setShowQuotationModal(false);
 
-  //   navigate("/quotations/new", {
-  //     state: {
-  //       quotationType: type,
-  //     },
-  //   });
-  // };
 
   const handleCreateQuotation = () => {
     navigate("/quotations/new");
@@ -218,7 +211,7 @@ export default function QuotationList() {
                     Account
                   </th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 w-[280px]">
-                    Project Deal
+                    Project Deal & PIC
                   </th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 w-[140px]">
                     Date
@@ -226,8 +219,8 @@ export default function QuotationList() {
                   <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 w-[160px]">
                     Grand Total
                   </th>
-                  <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 w-[140px]">
-                    Status
+                  <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 w-[180px]">
+                    Status & Activity
                   </th>
                   <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 w-[100px]">
                     Action
@@ -242,7 +235,7 @@ export default function QuotationList() {
                       <div className="flex flex-col items-center gap-4">
                         <div className="h-10 w-10 rounded-full border-[3px] border-[#37306B]/10 border-t-[#37306B] animate-spin" />
                         <span className="text-[13px] font-bold text-slate-400">
-                          Loading audit trail...
+                          Loading records...
                         </span>
                       </div>
                     </td>
@@ -250,85 +243,122 @@ export default function QuotationList() {
                 )}
 
                 {!loading &&
-                  quotations.map((q) => (
-                    <Fragment key={q.id}>
-                      <tr
-                        onClick={() => navigate(`/quotations/${q.id}`)}
-                        className="group cursor-pointer hover:bg-[#F8FAFC]/80 transition-all duration-200"
-                      >
-                        <td className="px-6 py-6">
-                          <div className="flex items-center gap-4">
-                            <button
-                              onClick={(e) => handleExpand(q.quotationNo, e)}
-                              className={`flex h-7 w-7 items-center justify-center rounded-lg border text-slate-400 transition-all active:scale-90 ${expandedRow === q.quotationNo ? "border-[#37306B]/20 bg-[#37306B]/5 text-[#37306B]" : "border-slate-200 hover:border-slate-300"}`}
-                            >
-                              <svg
-                                className={`h-3 w-3 transition-transform duration-300 ${expandedRow === q.quotationNo ? "rotate-180" : ""}`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={3}
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </button>
+                  quotations.map((q) => {
+                    const latestApproval = q.approvals?.[0];
+                    const pic = q.deal?.personInCharge;
+                    const isOwnKAM = user?.role === "KAM" && q.account?.keyAccountManagerId === user?.id;
+                    const isPIC = q.deal?.personInCharge && q.deal.personInCharge.toLowerCase() === user?.name?.toLowerCase();
+                    const isPowerUser = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role);
 
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2.5">
-                                <span className="text-[14px] font-black text-[#1E293B] leading-none whitespace-nowrap">
-                                  {q.quotationNo}
-                                </span>
-                                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500 uppercase tracking-wider">
-                                  V{q.version}
-                                </span>
+                    return (
+                      <Fragment key={q.id}>
+                        <tr
+                          onClick={() => navigate(`/quotations/${q.id}`)}
+                          className="group cursor-pointer hover:bg-[#F8FAFC]/80 transition-all duration-200"
+                        >
+                          <td className="px-6 py-6">
+                            <div className="flex items-center gap-4">
+                              <button
+                                onClick={(e) => handleExpand(q.quotationNo, e)}
+                                className={`flex h-7 w-7 items-center justify-center rounded-lg border text-slate-400 transition-all active:scale-90 ${expandedRow === q.quotationNo ? "border-[#37306B]/20 bg-[#37306B]/5 text-[#37306B]" : "border-slate-200 hover:border-slate-300"}`}
+                              >
+                                <svg
+                                  className={`h-3 w-3 transition-transform duration-300 ${expandedRow === q.quotationNo ? "rotate-180" : ""}`}
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={3}
+                                    d="M19 9l-7 7-7-7"
+                                  />
+                                </svg>
+                              </button>
+
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="text-[14px] font-black text-[#1E293B] leading-none whitespace-nowrap">
+                                    {q.quotationNo}
+                                  </span>
+                                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                                    V{q.version}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="px-6 py-6">
-                          <span className="block truncate text-[14px] font-bold text-slate-600 leading-tight">
-                            {q.account?.accountName || "—"}
-                          </span>
-                        </td>
+                          <td className="px-6 py-6">
+                            <span className="block truncate text-[14px] font-bold text-slate-600 leading-tight">
+                              {q.account?.accountName || "—"}
+                            </span>
+                          </td>
 
-                        <td className="px-6 py-6">
-                          <span className="block truncate text-[14px] font-bold text-slate-600 leading-tight">
-                            {q.deal?.dealName || "—"}
-                          </span>
-                        </td>
+                          <td className="px-6 py-6">
+                            <div className="space-y-1">
+                              <span className="block truncate text-[14px] font-bold text-slate-600 leading-tight">
+                                {q.deal?.dealName || "—"}
+                              </span>
+                              {pic && (
+                                <div className="flex items-center gap-1.5">
+                                  <div className="h-1 w-1 rounded-full bg-indigo-400" />
+                                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                    PIC: {pic}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
 
-                        <td className="px-6 py-6 whitespace-nowrap">
-                          <span className="text-[12px] font-bold text-slate-500 whitespace-nowrap">
-                            {q.issueDate
-                              ? new Date(q.issueDate).toLocaleDateString(
-                                  "en-IN",
-                                  {
-                                    day: "2-digit",
-                                    month: "short",
-                                    year: "numeric",
-                                  },
-                                )
-                              : "—"}
-                          </span>
-                        </td>
+                          <td className="px-6 py-6 whitespace-nowrap">
+                            <span className="text-[12px] font-bold text-slate-500 whitespace-nowrap">
+                              {q.issueDate
+                                ? new Date(q.issueDate).toLocaleDateString(
+                                    "en-IN",
+                                    {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    },
+                                  )
+                                : "—"}
+                            </span>
+                          </td>
 
-                        <td className="px-6 py-6 text-right">
-                          <span className="text-[15px] font-black text-[#37306B] tabular-nums tracking-tight">
-                            {formatAmount(q.grandTotal || 0)}
-                          </span>
-                        </td>
+                          <td className="px-6 py-6 text-right">
+                            <span className="text-[15px] font-black text-[#37306B] tabular-nums tracking-tight">
+                              {formatAmount(q.grandTotal || 0)}
+                            </span>
+                          </td>
 
-                        <td className="px-6 py-6 text-center">
-                          <StatusBadge status={q.status?.toUpperCase()} />
-                        </td>
+                          <td className="px-6 py-6 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <StatusBadge status={q.status?.toUpperCase()} />
+                              {latestApproval && (
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                    {latestApproval.action === "SUBMITTED"
+                                      ? "Release Requested"
+                                      : latestApproval.action === "RESUBMITTED"
+                                        ? "Resubmitted"
+                                        : latestApproval.action === "APPROVED"
+                                          ? "Approved by KAM"
+                                          : latestApproval.action === "REJECTED"
+                                            ? "Rejected by KAM"
+                                            : latestApproval.action}
+                                  </span>
+                                  <span className="mt-1 text-[10px] font-bold text-slate-500">
+                                    {latestApproval.actedBy?.name}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
 
-                        <td className="px-6 py-6 text-center">
-                          <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
+                          <td className="px-6 py-6 text-center">
+                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -344,11 +374,13 @@ export default function QuotationList() {
                                 navigate(`/quotations/${q.id}/edit`);
                               }}
                               disabled={
-                                isAdmin
+                                isPowerUser
                                   ? q.status?.toUpperCase() === "APPROVED"
-                                  : ["SUBMITTED", "APPROVED"].includes(
-                                      q.status?.toUpperCase(),
-                                    )
+                                  : (isOwnKAM || isPIC)
+                                    ? ["SUBMITTED", "APPROVED"].includes(
+                                        q.status?.toUpperCase(),
+                                      )
+                                    : true // Disable for anyone else
                               }
                               className="p-2 text-slate-400 hover:text-emerald-600 disabled:opacity-20 transition-colors"
                             >
@@ -444,7 +476,8 @@ export default function QuotationList() {
                         </tr>
                       )}
                     </Fragment>
-                  ))}
+                  );
+                })}
 
                 {!loading && quotations.length === 0 && (
                   <tr>

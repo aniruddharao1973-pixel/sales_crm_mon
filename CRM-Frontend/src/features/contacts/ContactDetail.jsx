@@ -39,34 +39,36 @@ const InfoItem = ({
   iconBg = "bg-[#3B2E7E]/10",
   iconColor = "text-[#3B2E7E]",
 }) => {
-  if (!value) return null;
+  const displayValue = value && value !== "—" ? value : "—";
 
-  return (
-    <div className="group flex items-center gap-4 p-4 rounded-xl hover:bg-[#3B2E7E]/5 transition-all duration-200">
+  const content = (
+    <div className="group flex items-center gap-4 p-3 rounded-xl hover:bg-[#3B2E7E]/5 transition-all duration-200">
       <div
-        className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}
+        className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}
       >
-        <Icon className={`w-5 h-5 ${iconColor}`} />
+        <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
           {label}
         </p>
-        {isLink ? (
+        {isLink && displayValue !== "—" ? (
           <Link
             to={to}
             className="text-sm font-semibold text-[#3B2E7E] hover:text-[#2A1F5C] transition-colors"
           >
-            {value}
+            {displayValue}
           </Link>
         ) : (
-          <p className="text-sm font-semibold text-slate-800 truncate">
-            {value}
+          <p className={`text-sm font-semibold truncate ${displayValue === "—" ? "text-slate-300 italic" : "text-slate-800"}`}>
+            {displayValue}
           </p>
         )}
       </div>
     </div>
   );
+
+  return content;
 };
 
 const SectionCard = ({
@@ -183,14 +185,14 @@ const StatCard = ({ icon: Icon, label, value, variant = "primary" }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-5 border border-[#3B2E7E]/10 hover:shadow-lg hover:shadow-[#3B2E7E]/10 transition-all duration-300">
+    <div className="bg-white rounded-xl p-3.5 border border-[#3B2E7E]/10 hover:shadow-lg hover:shadow-[#3B2E7E]/10 transition-all duration-300">
       <div
-        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${variants[variant]} flex items-center justify-center mb-4 shadow-lg`}
+        className={`w-10 h-10 rounded-lg bg-gradient-to-br ${variants[variant]} flex items-center justify-center mb-3 shadow-lg`}
       >
-        <Icon className="w-6 h-6 text-white" />
+        <Icon className="w-5 h-5 text-white" />
       </div>
-      <p className="text-2xl font-bold text-slate-800">{value}</p>
-      <p className="text-xs font-medium text-slate-500 mt-1">{label}</p>
+      <p className="text-xl font-bold text-slate-800 truncate">{value}</p>
+      <p className="text-[11px] font-medium text-slate-500 mt-0.5">{label}</p>
     </div>
   );
 };
@@ -200,6 +202,7 @@ const ContactDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { contact, detailLoading } = useSelector((s) => s.contacts);
+  const { user: currentUser } = useSelector((s) => s.auth);
 
   useEffect(() => {
     dispatch(fetchContact(id));
@@ -236,8 +239,8 @@ const ContactDetail = () => {
     contact.deals?.reduce((sum, deal) => sum + (deal.amount || 0), 0) || 0;
 
   return (
-    <div className="max-w-8xl">
-      {/* Top Navigation Bar */}
+    <div className="max-w-8xl p-4 sm:p-6">
+      {/* Top Navigation Bar */}  
       <div className="flex items-center justify-between mb-6">
         <nav className="flex items-center gap-2 text-sm">
           <Link
@@ -257,7 +260,7 @@ const ContactDetail = () => {
       </div>
 
       {/* Hero Header Card */}
-      <div className="relative bg-gradient-to-b from-[#3B2E7E] to-[#2A1F5C] rounded-3xl p-8 mb-8 overflow-hidden">
+      <div className="relative bg-gradient-to-b from-[#3B2E7E] to-[#2A1F5C] rounded-3xl p-3 lg:p-4 mb-6 mx-0 lg:mx-8 overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
@@ -271,20 +274,20 @@ const ContactDetail = () => {
         <div className="absolute bottom-6 left-1/4 w-16 h-16 border border-white/5 rounded-full"></div>
 
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3.5">
             <div className="relative">
-              <div className="ring-4 ring-white/20 rounded-2xl p-1 bg-white/10 backdrop-blur-sm">
+              <div className="ring-2 ring-white/20 rounded-xl p-0.5 bg-white/10 backdrop-blur-sm">
                 <Avatar
                   name={contact.firstName}
                   secondName={contact.lastName}
                   size="xl"
                   image={contact.image}
-                  className="!rounded-xl !w-20 !h-20 !text-2xl shadow-2xl"
+                  className="!rounded-lg !w-14 !h-14 !text-lg shadow-2xl"
                 />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-400 rounded-lg border-3 border-[#2A1F5C] flex items-center justify-center shadow-lg">
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 rounded-lg border-2 border-[#2A1F5C] flex items-center justify-center shadow-lg">
                 <svg
-                  className="w-3.5 h-3.5 text-white"
+                  className="w-2.5 h-2.5 text-white"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -298,7 +301,7 @@ const ContactDetail = () => {
             </div>
 
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+              <h1 className="text-lg sm:text-xl font-bold text-white mb-0.5">
                 {fullName}
               </h1>
               <div className="flex flex-wrap items-center gap-3">
@@ -347,13 +350,15 @@ const ContactDetail = () => {
                 Email
               </a>
             )}
-            <button
-              onClick={() => navigate(`/contacts/${id}/edit`)}
-              className="inline-flex items-center gap-2 px-5 py-3 bg-white text-[#3B2E7E] text-sm font-semibold rounded-xl hover:bg-purple-50 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#2A1F5C]/30"
-            >
-              <PencilSquareIcon className="w-4 h-4" />
-              Edit Contact
-            </button>
+            {!["TSE", "KAM"].includes(currentUser?.role) && (
+              <button
+                onClick={() => navigate(`/contacts/${id}/edit`)}
+                className="inline-flex items-center gap-2 px-5 py-3 bg-white text-[#3B2E7E] text-sm font-semibold rounded-xl hover:bg-purple-50 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#2A1F5C]/30"
+              >
+                <PencilSquareIcon className="w-4 h-4" />
+                Edit Contact
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -501,17 +506,19 @@ const ContactDetail = () => {
             title="Associated Deals"
             subtitle={`${contact.deals?.length || 0} deals worth ${formatCurrency(totalDealsValue)}`}
             action={
-              <button
-                onClick={() =>
-                  navigate(
-                    `/deals/new?accountId=${contact.accountId}&contactId=${contact.id}`,
-                  )
-                }
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all duration-200"
-              >
-                <PlusIcon className="w-4 h-4" />
-                New Deal
-              </button>
+              !["TSE", "KAM"].includes(currentUser?.role) && (
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/deals/new?accountId=${contact.accountId}&contactId=${contact.id}`,
+                    )
+                  }
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all duration-200"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  New Deal
+                </button>
+              )
             }
           >
             {contact.deals?.length > 0 ? (
@@ -531,17 +538,19 @@ const ContactDetail = () => {
                 <p className="text-sm text-slate-500 mb-4">
                   Create the first deal for this contact
                 </p>
-                <button
-                  onClick={() =>
-                    navigate(
-                      `/deals/new?accountId=${contact.accountId}&contactId=${contact.id}`,
-                    )
-                  }
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#3B2E7E] hover:text-[#2A1F5C] transition-colors"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  Create Deal
-                </button>
+                {!["TSE", "KAM"].includes(currentUser?.role) && (
+                  <button
+                    onClick={() =>
+                      navigate(
+                        `/deals/new?accountId=${contact.accountId}&contactId=${contact.id}`,
+                      )
+                    }
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-[#3B2E7E] hover:text-[#2A1F5C] transition-colors"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                    Create Deal
+                  </button>
+                )}
               </div>
             )}
           </SectionCard>

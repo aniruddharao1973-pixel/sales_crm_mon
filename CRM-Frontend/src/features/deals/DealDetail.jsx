@@ -111,21 +111,27 @@ const InfoRow = ({
   children,
   iconBg = "bg-[#3B2E7E]/10",
   iconColor = "text-[#3B2E7E]",
-}) => (
-  <div className="group flex items-center gap-4 p-4 rounded-xl hover:bg-[#3B2E7E]/5 transition-all duration-200">
-    <div
-      className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}
-    >
-      <Icon className={`w-5 h-5 ${iconColor}`} />
+}) => {
+  const hasValue = children && children !== "—" && children !== "-";
+  
+  return (
+    <div className="group flex items-center gap-4 p-3 rounded-xl hover:bg-[#3B2E7E]/5 transition-all duration-200">
+      <div
+        className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}
+      >
+        <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+          {label}
+        </p>
+        <div className={`text-sm font-semibold truncate ${!hasValue ? "text-slate-300 italic" : "text-slate-800"}`}>
+          {hasValue ? children : "—"}
+        </div>
+      </div>
     </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">
-        {label}
-      </p>
-      <div className="text-sm font-semibold text-slate-800">{children}</div>
-    </div>
-  </div>
-);
+  );
+};
 
 /* ────────────────── Stat Card Component ────────────────── */
 
@@ -144,19 +150,19 @@ const StatCard = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#3B2E7E]/10 p-5 hover:shadow-lg hover:shadow-[#3B2E7E]/10 transition-all duration-300">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white rounded-xl border border-[#3B2E7E]/10 p-3.5 hover:shadow-lg hover:shadow-[#3B2E7E]/10 transition-all duration-300">
+      <div className="flex items-center justify-between mb-2.5">
         <div
-          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${variants[variant]} flex items-center justify-center shadow-lg`}
+          className={`w-10 h-10 rounded-lg bg-gradient-to-br ${variants[variant]} flex items-center justify-center shadow-lg`}
         >
-          <Icon className="w-6 h-6 text-white" />
+          <Icon className="w-5 h-5 text-white" />
         </div>
         {subtext && (
-          <span className="text-xs text-slate-400 font-medium">{subtext}</span>
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{subtext}</span>
         )}
       </div>
-      <p className="text-2xl font-bold text-slate-800">{value}</p>
-      <p className="text-xs font-medium text-slate-500 mt-1">{label}</p>
+      <p className="text-xl font-bold text-slate-800 truncate">{value}</p>
+      <p className="text-[11px] font-medium text-slate-500 mt-0.5">{label}</p>
     </div>
   );
 };
@@ -316,7 +322,7 @@ const DealDetail = () => {
       </nav>
 
       {/* ───────────── HERO HEADER ───────────── */}
-      <div className="relative bg-gradient-to-b from-[#433877] to-[#463b79] rounded-3xl p-8 overflow-hidden">
+      <div className="relative bg-gradient-to-b from-[#433877] to-[#463b79] rounded-3xl p-3 lg:p-4 mb-6 mx-0 lg:mx-8 overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
@@ -328,17 +334,17 @@ const DealDetail = () => {
         <div className="absolute top-10 right-10 w-12 h-12 border border-white/10 rounded-full" />
 
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/deals")}
-              className="w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all border border-white/10"
+              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all border border-white/10"
             >
-              <ArrowLeftIcon className="w-5 h-5 text-white" />
+              <ArrowLeftIcon className="w-4.5 h-4.5 text-white" />
             </button>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
                   isClosed && deal.stage === "CLOSED_WON"
                     ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
                     : isClosed
@@ -346,12 +352,12 @@ const DealDetail = () => {
                       : "bg-white/20 backdrop-blur-sm"
                 }`}
               >
-                <span className="text-white text-xl font-bold">₹</span>
+                <span className="text-white text-lg font-bold">₹</span>
               </div>
 
               <div>
-                <div className="flex flex-wrap items-center gap-3 mb-2">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h1 className="text-xl lg:text-2xl font-extrabold text-white tracking-tight">
                     {deal.dealName}
                   </h1>
                   <span
@@ -505,13 +511,15 @@ const DealDetail = () => {
           Templates
         </button>
 
-        <button
-          onClick={() => navigate(`/deals/${id}/edit`)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all"
-        >
-          <PencilSquareIcon className="w-4 h-4" />
-          Edit Lead
-        </button>
+        {user?.role !== "KAM" && (
+          <button
+            onClick={() => navigate(`/deals/${id}/edit`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#3B2E7E] to-[#2A1F5C] text-white rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-[#3B2E7E]/30 transition-all"
+          >
+            <PencilSquareIcon className="w-4 h-4" />
+            Edit Lead
+          </button>
+        )}
       </div>
 
       {/* ───────────── PIPELINE / STAGE BAR ───────────── */}
