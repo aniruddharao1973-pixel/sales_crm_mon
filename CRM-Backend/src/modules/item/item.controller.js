@@ -60,6 +60,8 @@ export const createItem = async (req, res) => {
       }
     }
 
+    const imageUrl = req.file ? `/uploads/items/${req.file.filename}` : null;
+
     const item = await createItemService({
       category: category || null,
 
@@ -70,6 +72,7 @@ export const createItem = async (req, res) => {
       sku,
       name,
       description,
+      imageUrl,
       basePrice,
       make,
       mfgPartNo,
@@ -121,18 +124,26 @@ export const getItemById = async (req, res) => {
 /* ================= UPDATE ================= */
 export const updateItem = async (req, res) => {
   try {
+    const existingItem = await prisma.item.findUnique({
+      where: { id: req.params.id },
+    });
+
     const {
-      category, // ✅ NEW
-      sku,
-      name,
-      description,
-      basePrice,
-      pricingMode,
-      make,
-      mfgPartNo,
-      uom,
-      defaultRemarks,
+      category = existingItem?.category,
+      sku = existingItem?.sku,
+      name = existingItem?.name,
+      description = existingItem?.description,
+      basePrice = existingItem?.basePrice,
+      pricingMode = existingItem?.pricingMode,
+      make = existingItem?.make,
+      mfgPartNo = existingItem?.mfgPartNo,
+      uom = existingItem?.uom,
+      defaultRemarks = existingItem?.defaultRemarks,
     } = req.body;
+
+    const imageUrl = req.file
+      ? `/uploads/items/${req.file.filename}`
+      : existingItem?.imageUrl || null;
 
     const item = await updateItemService(req.params.id, {
       category: category || null,
@@ -144,12 +155,14 @@ export const updateItem = async (req, res) => {
       sku,
       name,
       description,
+      imageUrl,
       basePrice,
       make,
       mfgPartNo,
       uom,
       defaultRemarks,
     });
+
     res.json(item);
   } catch (err) {
     res.status(500).json({ message: err.message });

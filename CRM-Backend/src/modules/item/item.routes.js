@@ -2,6 +2,8 @@
 
 import express from "express";
 import multer from "multer";
+import uploadItemImage from "../../middlewares/uploadItemImage.js";
+
 
 import {
   createItem,
@@ -24,7 +26,12 @@ const upload = multer({
 });
 
 /* ================= CREATE ================= */
-router.post("/", protect, createItem);
+router.post(
+  "/",
+  protect,
+  uploadItemImage.single("image"),
+  createItem,
+);
 
 /* ================= IMPORT ================= */
 // 🔥 NEW ROUTE
@@ -45,7 +52,12 @@ router.get("/by-sku/:sku", protect, getItemTreeBySku);
 router.get("/:id", protect, getItemById);
 
 /* ================= UPDATE ================= */
-router.put("/:id", protect, updateItem);
+router.put(
+  "/:id",
+  protect,
+  uploadItemImage.single("image"),
+  updateItem,
+);
 
 /* ================= DELETE ================= */
 router.delete("/:id", protect, authorize("ADMIN"), deleteItem);

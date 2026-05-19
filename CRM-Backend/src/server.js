@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import http from "http";
+import path from "path";
 import { Server } from "socket.io";
 
 import "./services/reminder.scheduler.js";
@@ -153,10 +154,10 @@ app.use("/api/items", itemRoutes);
 // ✅ GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error("❌ API Error:", err.message);
-  
+
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
-  
+
   res.status(statusCode).json({
     success: false,
     message,
@@ -166,9 +167,10 @@ app.use((err, req, res, next) => {
 
 app.use("/public", express.static("public"));
 
-// ✅ ADD THIS (CRITICAL FOR ATTACHMENTS)
-app.use("/uploads", express.static("uploads"));
-
+app.use(
+  "/uploads",
+  express.static(path.resolve("public/uploads")),
+);
 /* =========================================================
    ✅ HEALTH CHECK
 ========================================================= */
@@ -196,4 +198,3 @@ server.listen(PORT, HOST, async () => {
     console.error("AI initialization failed:", err.message);
   }
 });
- 

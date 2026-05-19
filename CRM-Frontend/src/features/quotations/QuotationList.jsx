@@ -54,8 +54,6 @@ export default function QuotationList() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [expandedRow, setExpandedRow] = useState(null);
 
-
-
   const handleCreateQuotation = () => {
     navigate("/quotations/new");
   };
@@ -246,9 +244,18 @@ export default function QuotationList() {
                   quotations.map((q) => {
                     const latestApproval = q.approvals?.[0];
                     const pic = q.deal?.personInCharge;
-                    const isOwnKAM = user?.role === "KAM" && q.account?.keyAccountManagerId === user?.id;
-                    const isPIC = q.deal?.personInCharge && q.deal.personInCharge.toLowerCase() === user?.name?.toLowerCase();
-                    const isPowerUser = ["SUPER_ADMIN", "TSL", "MANAGER"].includes(user?.role);
+                    const isOwnKAM =
+                      user?.role === "KAM" &&
+                      q.account?.keyAccountManagerId === user?.id;
+                    const isPIC =
+                      q.deal?.personInCharge &&
+                      q.deal.personInCharge.toLowerCase() ===
+                        user?.name?.toLowerCase();
+                    const isPowerUser = [
+                      "SUPER_ADMIN",
+                      "TSL",
+                      "MANAGER",
+                    ].includes(user?.role);
 
                     return (
                       <Fragment key={q.id}>
@@ -359,125 +366,125 @@ export default function QuotationList() {
 
                           <td className="px-6 py-6 text-center">
                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/quotations/${q.id}`);
-                              }}
-                              className="p-2 text-slate-400 hover:text-[#37306B] transition-colors"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/quotations/${q.id}/edit`);
-                              }}
-                              disabled={
-                                isPowerUser
-                                  ? q.status?.toUpperCase() === "APPROVED"
-                                  : (isOwnKAM || isPIC)
-                                    ? ["SUBMITTED", "APPROVED"].includes(
-                                        q.status?.toUpperCase(),
-                                      )
-                                    : true // Disable for anyone else
-                              }
-                              className="p-2 text-slate-400 hover:text-emerald-600 disabled:opacity-20 transition-colors"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            {isAdmin && (
                               <button
-                                onClick={(e) => handleDelete(q.id, e)}
-                                className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/quotations/${q.id}`);
+                                }}
+                                className="p-2 text-slate-400 hover:text-[#37306B] transition-colors"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-
-                      {expandedRow === q.quotationNo && (
-                        <tr className="bg-slate-50/20">
-                          <td
-                            colSpan={7}
-                            className="px-8 py-6 border-b border-slate-100"
-                          >
-                            <div className="ml-12 max-w-2xl rounded-[18px] border border-slate-200/60 bg-white shadow-xl shadow-slate-200/40 overflow-hidden animate-fadeIn">
-                              <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2.5">
-                                  <History className="h-3.5 w-3.5 text-[#37306B]" />
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#37306B]">
-                                    Revision Audit Log
-                                  </span>
-                                </div>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                  {history.length} Version
-                                  {history.length !== 1 ? "s" : ""} Traceable
-                                </span>
-                              </div>
-                              <div className="divide-y divide-slate-50">
-                                {history.map((h) => (
-                                  <div
-                                    key={h.id}
-                                    className="flex items-center justify-between px-6 py-4 hover:bg-slate-50/50 transition-colors"
-                                  >
-                                    <div className="flex items-center gap-5">
-                                      <span
-                                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black ${h.isLatest ? "bg-[#37306B] text-white shadow-lg shadow-[#37306B]/20" : "bg-slate-100 text-slate-400"}`}
-                                      >
-                                        {h.version}
-                                      </span>
-                                      <div>
-                                        <div className="flex items-center gap-2.5">
-                                          <span className="text-[13px] font-black text-slate-800">
-                                            Revision{" "}
-                                            {h.version
-                                              .toString()
-                                              .padStart(2, "0")}
-                                          </span>
-                                          {h.isLatest && (
-                                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-sm bg-emerald-100 text-emerald-700 uppercase tracking-widest">
-                                              Active
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">
-                                          {new Date(
-                                            h.createdAt,
-                                          ).toLocaleDateString("en-IN", {
-                                            day: "numeric",
-                                            month: "short",
-                                            year: "numeric",
-                                          })}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-6">
-                                      <span className="text-[14px] font-black text-slate-700 tabular-nums">
-                                        {formatINR(h.grandTotal)}
-                                      </span>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          navigate(`/quotations/${h.id}`);
-                                        }}
-                                        className="text-[10px] font-black text-[#37306B] hover:text-[#2D275A] border-b border-transparent hover:border-[#37306B] transition-all tracking-widest"
-                                      >
-                                        VIEW DETAILS
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/quotations/${q.id}/edit`);
+                                }}
+                                disabled={
+                                  isPowerUser
+                                    ? q.status?.toUpperCase() === "APPROVED"
+                                    : isOwnKAM || isPIC
+                                      ? ["SUBMITTED", "APPROVED"].includes(
+                                          q.status?.toUpperCase(),
+                                        )
+                                      : true // Disable for anyone else
+                                }
+                                className="p-2 text-slate-400 hover:text-emerald-600 disabled:opacity-20 transition-colors"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              {isAdmin && (
+                                <button
+                                  onClick={(e) => handleDelete(q.id, e)}
+                                  className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
+
+                        {expandedRow === q.quotationNo && (
+                          <tr className="bg-slate-50/20">
+                            <td
+                              colSpan={7}
+                              className="px-8 py-6 border-b border-slate-100"
+                            >
+                              <div className="ml-12 max-w-2xl rounded-[18px] border border-slate-200/60 bg-white shadow-xl shadow-slate-200/40 overflow-hidden animate-fadeIn">
+                                <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                                  <div className="flex items-center gap-2.5">
+                                    <History className="h-3.5 w-3.5 text-[#37306B]" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#37306B]">
+                                      Revision Audit Log
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    {history.length} Version
+                                    {history.length !== 1 ? "s" : ""} Traceable
+                                  </span>
+                                </div>
+                                <div className="divide-y divide-slate-50">
+                                  {history.map((h) => (
+                                    <div
+                                      key={h.id}
+                                      className="flex items-center justify-between px-6 py-4 hover:bg-slate-50/50 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-5">
+                                        <span
+                                          className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black ${h.isLatest ? "bg-[#37306B] text-white shadow-lg shadow-[#37306B]/20" : "bg-slate-100 text-slate-400"}`}
+                                        >
+                                          {h.version}
+                                        </span>
+                                        <div>
+                                          <div className="flex items-center gap-2.5">
+                                            <span className="text-[13px] font-black text-slate-800">
+                                              Revision{" "}
+                                              {h.version
+                                                .toString()
+                                                .padStart(2, "0")}
+                                            </span>
+                                            {h.isLatest && (
+                                              <span className="text-[8px] font-black px-1.5 py-0.5 rounded-sm bg-emerald-100 text-emerald-700 uppercase tracking-widest">
+                                                Active
+                                              </span>
+                                            )}
+                                          </div>
+                                          <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                            {new Date(
+                                              h.createdAt,
+                                            ).toLocaleDateString("en-IN", {
+                                              day: "numeric",
+                                              month: "short",
+                                              year: "numeric",
+                                            })}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-6">
+                                        <span className="text-[14px] font-black text-slate-700 tabular-nums">
+                                          {formatINR(h.grandTotal)}
+                                        </span>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/quotations/${h.id}`);
+                                          }}
+                                          className="text-[10px] font-black text-[#37306B] hover:text-[#2D275A] border-b border-transparent hover:border-[#37306B] transition-all tracking-widest"
+                                        >
+                                          VIEW DETAILS
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
 
                 {!loading && quotations.length === 0 && (
                   <tr>

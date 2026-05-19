@@ -593,6 +593,8 @@ export default function ItemModal({
   const [parentSearch, setParentSearch] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
 
   const currentItem = useMemo(() => {
     if (!item?.id) return null;
@@ -677,6 +679,7 @@ export default function ItemModal({
         uom: currentItem.uom || "",
         defaultRemarks: currentItem.defaultRemarks || "",
       });
+      setImagePreview(currentItem.imageUrl || "");
     } else {
       resetCreateState();
     }
@@ -768,6 +771,7 @@ export default function ItemModal({
 
   const handleSubmit = async () => {
     const err = validate();
+
     if (err) {
       setError(err);
       return;
@@ -777,13 +781,26 @@ export default function ItemModal({
 
     try {
       if (isEdit) {
+        const formData = new FormData();
+
+        Object.entries({
+          ...payload,
+          parentId: undefined,
+        }).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value);
+          }
+        });
+
+        // ✅ image upload
+        if (imageFile) {
+          formData.append("image", imageFile);
+        }
+
         await dispatch(
           updateItem({
             id: currentItem.id,
-            data: {
-              ...payload,
-              parentId: undefined,
-            },
+            data: formData,
           }),
         ).unwrap();
       } else {
@@ -791,9 +808,11 @@ export default function ItemModal({
       }
 
       await dispatch(fetchItems());
+
       handleClose();
     } catch (err) {
       console.error(err);
+
       setError(err?.message || "Something went wrong while saving item.");
     }
   };
@@ -1196,6 +1215,65 @@ export default function ItemModal({
               </section>
             )}
 
+            {/* IMAGE */}
+            <section className="rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="p-5 bg-slate-50 border-b border-slate-200">
+                <h3 className="text-base font-semibold text-slate-900">
+                  Item Image
+                </h3>
+              </div>
+
+              <div className="p-5">
+                <div className="flex items-start gap-5">
+                  <div className="h-40 w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center">
+                    {imagePreview ? (
+                      <img
+                        src={
+                          imagePreview.startsWith("blob:")
+                            ? imagePreview
+                            : `http://localhost:5000${imagePreview}`
+                        }
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          console.error(
+                            "❌ EDIT MODAL IMAGE FAILED:",
+                            e.target.src,
+                          );
+                        }}
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-400">No image</span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700">
+                      Change Image
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+
+                          if (!file) return;
+
+                          setImageFile(file);
+
+                          setImagePreview(URL.createObjectURL(file));
+                        }}
+                      />
+                    </label>
+
+                    <p className="text-xs text-slate-400">
+                      PNG, JPG, WEBP supported
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Basic Information */}
             <section className="rounded-2xl border border-slate-200 overflow-hidden">
               <div className="p-5 bg-slate-50 border-b border-slate-200">
@@ -1366,10 +1444,17 @@ export default function ItemModal({
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Total Price <span className="text-red-500">*</span>
                     </label>
+
                     <input
-                      type="number"
+                      type="text"
                       readOnly
-                      value={form.basePrice}
+                      value={
+                        form.basePrice !== ""
+                          ? Number(form.basePrice).toLocaleString("en-IN", {
+                              maximumFractionDigits: 0,
+                            })
+                          : ""
+                      }
                       className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-lg bg-emerald-50 font-semibold text-emerald-900"
                     />
                   </div>

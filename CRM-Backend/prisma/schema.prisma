@@ -932,6 +932,8 @@ model Item {
   name        String?
   description String?
 
+  imageUrl    String?   // ✅ ADD THIS
+
   basePrice    Float?
 
   quantity     Float? @default(1)

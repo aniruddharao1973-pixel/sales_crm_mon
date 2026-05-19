@@ -241,6 +241,7 @@
 // });
 
 // export default itemSlice.reducer;
+
 // src/features/items/itemSlice.js
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
@@ -282,7 +283,15 @@ export const updateItem = createAsyncThunk(
   "items/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const res = await API.put(`/items/${id}`, data);
+      const isFormData = data instanceof FormData;
+
+      const res = await API.put(`/items/${id}`, data, {
+        headers: isFormData
+          ? {
+              "Content-Type": "multipart/form-data",
+            }
+          : {},
+      });
       return normalize(res);
     } catch (err) {
       return rejectWithValue(err.response?.data || "Update failed");
@@ -395,6 +404,7 @@ const itemSlice = createSlice({
           ? action.payload.map((item) => ({
               pricingMode: "parent_only",
               ...item,
+              imageUrl: item.imageUrl || null,
             }))
           : [];
       })

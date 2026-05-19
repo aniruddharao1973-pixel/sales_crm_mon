@@ -1,9 +1,9 @@
 // src/features/items/ItemList.jsx
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { fetchItems, deleteItem, importItems } from "./itemSlice";
+import { fetchItems, deleteItem, importItems, updateItem } from "./itemSlice";
 import {
   Package,
   Plus,
@@ -127,7 +127,23 @@ export default function ItemList() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const fileInputRefs = useRef({});
+  const [uploadingItemId, setUploadingItemId] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
+  const resolveImageUrl = (imageUrl) => {
+    if (!imageUrl) return "";
+
+    // already full url
+    if (imageUrl.startsWith("http")) {
+      return imageUrl;
+    }
+
+    // ✅ backend server url
+    const backend = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+    return `${backend}${imageUrl}`;
+  };
   const formatAmount = (value) => {
     const amount = Number(value || 0);
 
@@ -305,6 +321,52 @@ export default function ItemList() {
     );
   };
 
+  const handleImageUpload = async (itemId, file) => {
+    if (!file) return;
+
+    try {
+      setUploadingItemId(itemId);
+
+      const formData = new FormData();
+
+      formData.append("image", file);
+
+      console.log("📤 UPLOADING FILE:", file);
+
+      const updated = await dispatch(
+        updateItem({
+          id: itemId,
+          data: formData,
+        }),
+      ).unwrap();
+
+      console.log("✅ UPDATED ITEM RESPONSE:", updated);
+
+      // ✅ instantly refresh preview modal image
+      if (updated?.imageUrl) {
+        setPreviewImage((prev) =>
+          prev && prev.id === itemId
+            ? {
+                ...prev,
+                imageUrl: updated.imageUrl,
+              }
+            : prev,
+        );
+      }
+
+      // ✅ refresh latest data
+      await dispatch(fetchItems());
+
+      console.log("🖼️ FINAL IMAGE URL:", resolveImageUrl(updated?.imageUrl));
+    } catch (err) {
+      console.error("❌ IMAGE UPLOAD ERROR:", err);
+
+      alert(err?.message || "Image upload failed");
+    } finally {
+      setUploadingItemId(null);
+    }
+  };
+
   /* ── RENDER ROWS ── */
   const renderRows = (items, level = 0) =>
     items.map((item) => {
@@ -323,12 +385,63 @@ export default function ItemList() {
             <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <SkuBadge sku={item.sku} />
             </td>
+            {/* IMAGE */}
 
+            <td className="px-4 py-3 text-center border-r border-slate-100 last:border-r-0">
+              <div className="relative mx-auto">
+                {/* IMAGE / VIEW CARD */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (item.imageUrl) {
+                      setPreviewImage(item);
+                    }
+                  }}
+                  className="group relative mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-violet-300 hover:shadow-sm transition-all"
+                >
+                  {item.imageUrl ? (
+                    <>
+                      <img
+                        key={`${item.sku}-${item.imageUrl || "no-image"}`}
+                        src={resolveImageUrl(item.imageUrl)}
+                        alt={item.name}
+                        className="h-full w-full object-cover"
+                        onLoad={() => {
+                          console.log(
+                            "✅ IMAGE LOADED:",
+                            resolveImageUrl(item.imageUrl),
+                          );
+                        }}
+                        onError={(e) => {
+                          console.error(
+                            "❌ IMAGE FAILED:",
+                            resolveImageUrl(item.imageUrl),
+                          );
+
+                          console.error("❌ FAILED SRC:", e.target.src);
+                        }}
+                      />
+
+                      {/* HOVER OVERLAY */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <Eye className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-400 group-hover:text-violet-600 transition-colors">
+                      <Eye className="w-4 h-4 mb-1" />
+                      <span className="text-[10px] font-medium">View</span>
+                    </div>
+                  )}
+                </button>
+
+                {/* HIDDEN FILE INPUT */}
+              </div>
+            </td>
             {/* CATEGORY */}
-            <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
+            <td className="px-3 py-3 w-[140px] max-w-[140px] border-r border-slate-100 last:border-r-0">
               <CategoryBadge category={item.category} />
             </td>
-
             {/* ITEM DETAILS */}
             <td className="px-4 py-3 border-r border-slate-100 last:border-r-0">
               <div
@@ -394,19 +507,16 @@ export default function ItemList() {
                 </div>
               </div>
             </td>
-
             {/* MAKE */}
             <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <span className="text-[13px] text-slate-600">
                 {item.make || <span className="text-slate-300">—</span>}
               </span>
             </td>
-
             {/* MFG PART NO */}
             <td className="px-4 py-3 whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <MfgCode code={item.mfgPartNo} />
             </td>
-
             {/* QTY */}
             <td className="px-4 py-3 text-center whitespace-nowrap border-r border-slate-100 last:border-r-0">
               {level > 0 &&
@@ -418,12 +528,10 @@ export default function ItemList() {
                 </span>
               )}
             </td>
-
             {/* UOM */}
             <td className="px-4 py-3 text-center whitespace-nowrap border-r border-slate-100 last:border-r-0">
               <UomBadge uom={item.uom} />
             </td>
-
             {/* BASE PRICE */}
             {/* BASE PRICE */}
             <td className="px-4 py-3 text-center whitespace-nowrap border-r border-slate-100 last:border-r-0">
@@ -436,14 +544,12 @@ export default function ItemList() {
                 </span>
               )}
             </td>
-
             {/* TOTAL PRICE */}
             {/* <td className="px-4 py-3 text-right whitespace-nowrap">
               <span className="text-[13px] font-medium text-blue-600">
                 {formatAmount(hasChildren ? total : item.basePrice || 0)}
               </span>
             </td> */}
-
             {/* TOTAL PRICE */}
             <td className="px-4 py-3 text-right whitespace-nowrap border-r border-slate-100 last:border-r-0">
               {level === 0 ? (
@@ -460,7 +566,6 @@ export default function ItemList() {
                 <span className="text-slate-300">—</span>
               )}
             </td>
-
             {/* ACTIONS */}
             <td className="px-4 py-3 border-r border-slate-100 last:border-r-0">
               <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
@@ -660,7 +765,8 @@ export default function ItemList() {
                 <tr className="bg-slate-50 border-b border-slate-100">
                   {[
                     { label: "SKU", w: "8%", align: "left" },
-                    { label: "Category", w: "15%", align: "left" },
+                    { label: "Image", w: "6%", align: "center" },
+                    { label: "Category", w: "10%", align: "left" },
                     { label: "Item description", w: "36%", align: "left" },
                     { label: "Make", w: "7%", align: "left" },
                     { label: "Mfg part no", w: "7%", align: "left" },
@@ -685,7 +791,7 @@ export default function ItemList() {
                 {/* LOADING */}
                 {loading && (
                   <tr>
-                    <td colSpan={10} className="py-20">
+                    <td colSpan={11} className="py-20">
                       <div className="flex flex-col items-center gap-3">
                         <div className="relative">
                           <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-slate-200 border-t-violet-500" />
@@ -715,7 +821,7 @@ export default function ItemList() {
                           className="border-b border-slate-100 bg-slate-50/80 hover:bg-slate-100/60 cursor-pointer transition-colors"
                           onClick={() => toggleCategory(category)}
                         >
-                          <td colSpan={10} className="px-4 py-2">
+                          <td colSpan={11} className="px-4 py-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div className="w-5 h-5 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-400">
@@ -748,7 +854,7 @@ export default function ItemList() {
                 {/* EMPTY STATE */}
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="py-20">
+                    <td colSpan={11} className="py-20">
                       <div className="flex flex-col items-center gap-4 text-center">
                         <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
                           {search ? (
@@ -957,6 +1063,75 @@ export default function ItemList() {
                 <Upload className="w-3.5 h-3.5" />
                 Import
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ═══════════════ IMAGE PREVIEW MODAL ═══════════════ */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-2xl rounded-2xl overflow-hidden bg-white shadow-2xl border border-slate-200">
+            {/* HEADER */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-[15px] font-semibold text-slate-800">
+                  Item Image
+                </h2>
+
+                <p className="text-[12px] text-slate-400 mt-0.5">
+                  {previewImage.sku}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* IMAGE AREA */}
+            <div className="bg-slate-50 flex items-center justify-center p-6 min-h-[420px]">
+              {previewImage.imageUrl ? (
+                <img
+                  key={`${previewImage.sku}-${previewImage.imageUrl || "no-image"}`}
+                  src={resolveImageUrl(previewImage.imageUrl)}
+                  alt={previewImage.name}
+                  className="max-h-[500px] max-w-full rounded-2xl border border-slate-200 bg-white shadow-lg object-contain"
+                  onError={(e) => {
+                    console.error("Preview image failed:", e.target.src);
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400">
+                  <Eye className="w-10 h-10 mb-3" />
+
+                  <p className="text-[14px] font-medium">No image uploaded</p>
+                </div>
+              )}
+            </div>
+
+            {/* FOOTER */}
+            <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 bg-white">
+              <div>
+                <p className="text-[13px] font-medium text-slate-700">
+                  {previewImage.name}
+                </p>
+
+                <p className="text-[12px] text-slate-400">
+                  {previewImage.category}
+                </p>
+              </div>
+
+              {/* <button
+                onClick={() => fileInputRefs.current[previewImage.id]?.click()}
+                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-violet-700 transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+
+                {previewImage.imageUrl ? "Change Image" : "Upload Image"}
+              </button> */}
             </div>
           </div>
         </div>

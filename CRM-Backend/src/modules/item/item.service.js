@@ -2,6 +2,8 @@
 
 import prisma from "../../utils/prisma.js";
 import * as XLSX from "xlsx";
+import fs from "fs";
+import path from "path";
 
 /* ================= CREATE ================= */
 export const createItemService = async (data) => {
@@ -10,6 +12,7 @@ export const createItemService = async (data) => {
       sku: data.sku ? String(data.sku).trim() : null,
       name: data.name || null,
       description: data.description,
+      imageUrl: data.imageUrl || null,
       basePrice: data.basePrice ? Number(data.basePrice) : null,
       quantity: data.quantity !== undefined ? Number(data.quantity) : 1,
       unitPrice:
@@ -79,6 +82,7 @@ export const updateItemService = async (id, data) => {
       sku: data.sku ? String(data.sku).trim() : null,
       name: data.name || null,
       description: data.description,
+      imageUrl: data.imageUrl !== undefined ? data.imageUrl : undefined,
       basePrice: data.basePrice ? Number(data.basePrice) : null,
       quantity: data.quantity !== undefined ? Number(data.quantity) : undefined,
       unitPrice:
@@ -304,6 +308,19 @@ export const importItemsService = async ({ file, category }) => {
     excelCategories.add(canonicalCategory);
 
     // ✅ delete matching old categories
+    // ✅ get old items first
+    const oldItems = await tx.item.findMany({
+      where: {
+        category: {
+          in: Array.from(excelCategories),
+        },
+      },
+      select: {
+        imageUrl: true,
+      },
+    });
+
+    // ✅ delete old DB rows
     await tx.item.deleteMany({
       where: {
         category: {
@@ -312,7 +329,26 @@ export const importItemsService = async ({ file, category }) => {
       },
     });
 
-    console.log("🗑️ OLD CATEGORY ITEMS REMOVED");
+    // ✅ remove physical image files
+    for (const item of oldItems) {
+      if (!item.imageUrl) continue;
+
+      const relativePath = item.imageUrl.replace(/^\/+/, "");
+
+      const filePath = path.join(process.cwd(), "public", relativePath);
+
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+
+          console.log("🗑️ IMAGE REMOVED:", filePath);
+        }
+      } catch (err) {
+        console.error("❌ IMAGE DELETE FAILED:", err.message);
+      }
+    }
+
+    console.log("🗑️ OLD CATEGORY ITEMS + IMAGES REMOVED");
     // 🔹 FLAT IMPORT
     if (importType === "flat") {
       let instrumentationSoftwareCreated = false;
